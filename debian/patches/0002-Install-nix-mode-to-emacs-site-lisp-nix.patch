@@ -1,0 +1,21 @@
+From: Antono Vasiljev <self@antono.info>
+Date: Tue, 26 Jun 2012 02:03:06 +0300
+Subject: Install nix-mode to emacs/site-lisp/nix
+
+---
+ misc/emacs/Makefile.am |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/misc/emacs/Makefile.am b/misc/emacs/Makefile.am
+index 49f19fe..d5fbaea 100644
+--- a/misc/emacs/Makefile.am
++++ b/misc/emacs/Makefile.am
+@@ -1,5 +1,5 @@
+ EXTRA_DIST = nix-mode.el
+ 
+ install-data-local:
+-	$(INSTALL) -d $(DESTDIR)$(datadir)/emacs/site-lisp
+-	$(INSTALL_DATA) $(srcdir)/nix-mode.el $(DESTDIR)$(datadir)/emacs/site-lisp
++	$(INSTALL) -d $(DESTDIR)$(datadir)/emacs/site-lisp/nix
++	$(INSTALL_DATA) $(srcdir)/nix-mode.el $(DESTDIR)$(datadir)/emacs/site-lisp/nix
+-- 
