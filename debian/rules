@@ -8,6 +8,8 @@
 
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
-
 %:
-	dh $@ 
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- --localstatedir=/nix/var --enable-gc
