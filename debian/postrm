@@ -5,6 +5,9 @@
 
 set -e
 
+NIX_GROUP='nixbld'
+NIX_USER='nix-builder'
+
 # summary of how this script can be called:
 #        * <postrm> `remove'
 #        * <postrm> `purge'
@@ -20,7 +23,17 @@ set -e
 
 
 case "$1" in
-    purge|remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    purge|failed-upgrade|abort-install|abort-upgrade|disappear)
+        for i in $(seq 1 5); do
+            CURRENT_NIX_USER=$NIX_USER-$i
+            if getent passwd $CURRENT_NIX_USER > /dev/null; then
+                deluser $CURRENT_NIX_USER
+            fi
+        done
+
+        if getent group $NIX_GROUP > /dev/null; then
+            delgroup $NIX_GROUP
+        fi
     ;;
 
     *)
