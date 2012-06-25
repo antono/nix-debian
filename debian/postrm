@@ -23,7 +23,7 @@ NIX_USER='nix-builder'
 
 
 case "$1" in
-    purge|failed-upgrade|abort-install|abort-upgrade|disappear)
+    purge)
         for i in $(seq 1 5); do
             CURRENT_NIX_USER=$NIX_USER-$i
             if getent passwd $CURRENT_NIX_USER > /dev/null; then
