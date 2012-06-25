@@ -1,0 +1,5 @@
+nix (1.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Anton Vasiljev <self@antono.info>  Mon, 25 Jun 2012 19:44:04 +0300

@@ -1,0 +1,6 @@
+Nix for Debian
+--------------
+
+Nix will not pollute your system. It only writes to /nix/* and /etc/nix.
+
+ -- Anton Vasiljev <self@antono.info>  Mon, 25 Jun 2012 19:44:04 +0300

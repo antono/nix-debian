@@ -1,0 +1,23 @@
+Source: nix
+Section: unknown
+Priority: extra
+Maintainer: Anton Vasiljev <self@antono.info>
+Build-Depends: debhelper (>= 8.0.0), autotools-dev
+Standards-Version: 3.9.2
+Homepage: http://nixos.org/nix/
+
+Package: nix
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Purely functional package manager
+ Nix treats packages like values in purely functional programming
+ languages such as Haskell — they are built by functions that don’t
+ have side-effects, and they never change after they have been
+ built. This leads to following powerful features:
+ .
+   - Atomic upgrades and rollbacks
+   - Multiple versions of the same package
+   - Complete dependencies
+   - Multi-user support (non root users can install packages)
+   - Transparent source/binary deployment
+ .
