@@ -1,0 +1,90 @@
+%define enable_setuid ""
+%define nix_user "nix"
+%define nix_group "nix"
+
+# If set, the Nix user and group will be created by the RPM
+# pre-install script.
+%define nix_user_uid ""
+%define nix_group_gid ""
+
+Summary: The Nix software deployment system
+Name: nix
+Version: 1.0
+Release: 1
+License: GPL
+Group: Software Deployment
+URL: http://nixos.org/
+Source0: %{name}-1.0.tar.bz2
+BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
+Prefix: /usr
+Requires: /usr/bin/perl
+Requires: curl
+Requires: perl-DBD-SQLite
+Requires: perl-devel
+Requires: bzip2
+Requires: bzip2-libs
+Requires: sqlite
+BuildRequires: bzip2-devel
+BuildRequires: sqlite-devel
+
+# Hack to make that shitty RPM scanning hack shut up.
+Provides: perl(Nix::SSH)
+                                                               
+%description
+
+Nix is a purely functional package manager. It allows multiple
+versions of a package to be installed side-by-side, ensures that
+dependency specifications are complete, supports atomic upgrades and
+rollbacks, allows non-root users to install software, and has many
+other features. It is the basis of the NixOS Linux distribution, but
+it can be used equally well under other Unix systems.
+
+%prep
+%setup -q
+
+%build
+extraFlags=
+if test -n "%{enable_setuid}"; then
+    extraFlags="$extraFlags --enable-setuid"
+    if test -n "%{nix_user}"; then
+        extraFlags="$extraFlags --with-nix-user=%{nix_user}"
+    fi
+    if test -n "%{nix_group}"; then
+        extraFlags="$extraFlags --with-nix-group=%{nix_group}"
+    fi
+fi
+./configure --prefix=%{_prefix} --sysconfdir=/etc $extraFlags
+make
+make check
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make DESTDIR=$RPM_BUILD_ROOT install
+rm $RPM_BUILD_ROOT/etc/nix/nix.conf
+strip $RPM_BUILD_ROOT/%{_prefix}/bin/* || true
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%pre
+if test -n "%{nix_group_gid}"; then
+    /usr/sbin/groupadd -g %{nix_group_gid} %{nix_group} || true
+fi
+if test -n "%{nix_user_uid}"; then
+    /usr/sbin/useradd -c "Nix" -u %{nix_user_uid} \
+        -s /sbin/nologin -r -d /var/empty %{nix_user} \
+        -g %{nix_group} || true
+fi
+
+%files
+#%defattr(-,root,root)
+%{_prefix}/bin
+%{_prefix}/lib
+%{_prefix}/libexec
+%{_prefix}/include
+%{_prefix}/share
+/etc/profile.d/nix.sh
+/nix/var
+/nix/store
+%config
+/etc/nix
