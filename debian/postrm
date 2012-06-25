@@ -36,6 +36,9 @@ case "$1" in
         fi
     ;;
 
+    failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+
     *)
         echo "postrm called with unknown argument \`$1'" >&2
         exit 1
