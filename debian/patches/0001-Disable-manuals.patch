@@ -1,0 +1,55 @@
+From: Antono Vasiljev <self@antono.info>
+Date: Mon, 25 Jun 2012 22:28:14 +0300
+Subject: Disable manuals
+
+---
+ Makefile.am     |    2 +-
+ configure.ac    |    2 --
+ doc/Makefile.am |    2 +-
+ doc/Makefile.in |    2 +-
+ 4 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 4bbd952..1c5b81d 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -1,4 +1,4 @@
+-SUBDIRS = src perl scripts corepkgs doc misc tests
++SUBDIRS = src perl scripts corepkgs misc tests
+ EXTRA_DIST = substitute.mk nix.spec nix.spec.in bootstrap.sh \
+   nix.conf.example NEWS version
+ 
+diff --git a/configure.ac b/configure.ac
+index 7b814de..3f4ed04 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -331,8 +331,6 @@ AC_CONFIG_FILES([Makefile
+    perl/Makefile
+    scripts/Makefile
+    corepkgs/Makefile
+-   doc/Makefile
+-   doc/manual/Makefile
+    misc/Makefile
+    misc/emacs/Makefile
+    tests/Makefile
+diff --git a/doc/Makefile.am b/doc/Makefile.am
+index e76efaf..bbcdbe0 100644
+--- a/doc/Makefile.am
++++ b/doc/Makefile.am
+@@ -1 +1 @@
+-SUBDIRS = manual
++# SUBDIRS = manual
+diff --git a/doc/Makefile.in b/doc/Makefile.in
+index a6344e4..393f4e7 100644
+--- a/doc/Makefile.in
++++ b/doc/Makefile.in
+@@ -242,7 +242,7 @@ w3m = @w3m@
+ xmlflags = @xmlflags@
+ xmllint = @xmllint@
+ xsltproc = @xsltproc@
+-SUBDIRS = manual
++# SUBDIRS = manual
+ all: all-recursive
+ 
+ .SUFFIXES:
+-- 
