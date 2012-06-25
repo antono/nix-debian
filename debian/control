@@ -2,13 +2,16 @@ Source: nix
 Section: unknown
 Priority: extra
 Maintainer: Anton Vasiljev <self@antono.info>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev
+Build-Depends: debhelper (>= 8.0.0), autotools-dev, curl,
+  build-essential, pkg-config, perl (>= 5.8), bzip2, libbz2-dev,
+  libsqlite3-dev, libdbd-sqlite3-perl, libgc-dev
 Standards-Version: 3.9.2
 Homepage: http://nixos.org/nix/
 
 Package: nix
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libsqlite3-0, perl, curl,
+  wget, bzip2, libgc1c2
 Description: Purely functional package manager
  Nix treats packages like values in purely functional programming
  languages such as Haskell — they are built by functions that don’t
