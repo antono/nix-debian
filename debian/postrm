@@ -38,7 +38,7 @@ case "$1" in
         # TODO: rm -rf /nix # WTF :)
     ;;
 
-    remove|failed-upgrade|abort-install|abort-upgrade|disappear)
+    remove|failed-upgrade|abort-install|abort-upgrade|disappear|upgrade)
     ;;
 
     *)
