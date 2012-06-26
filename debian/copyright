@@ -1,20 +1,37 @@
-Format: http://dep.debian.net/deps/dep5
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: nix
-Source: <url://example.com>
+Source: <http://nixos.org/nix/>
+Upstream-Contact: Eelco Dolstra <eelco.dolstra@logicblox.com>
 
 Files: *
-Copyright: <years> <put author's name and email here>
-           <years> <likewise for another author>
-License: <special license>
- <Put the license of the package here indented by 1 space>
- <This follows the format of Description: lines in control file>
+Copyright: Copyright 2004-2012 Martin Bravenboer
+           Copyright 2004-2012 Eelco Dolstra
+           Copyright 2004-2012 Niels Janssen
+           Copyright 2004-2012 Armijn Hemel
+           Copyright 2004-2012 Rob Vermaas
+           Copyright 2004-2012 Eelco Visser
+License: LGPL-2+
+ This library is free software; you can redistribute it and/or 
+ modify it under the terms of the GNU Lesser General Public 
+ License as published by the Free Software Foundation; either 
+ version 2.1 of the License, or (at your option) any later version. 
+ 
+ This library is distributed in the hope that it will be useful, 
+ but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ Lesser General Public License for more details. 
+ 
+ You should have received a copy of the GNU Lesser General Public 
+ License along with this library; if not, write to the Free Software 
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA 
+ Also add information on how to contact you by electronic and paper mail. 
  .
- <Including paragraphs>
+ On Debian systems, the full text of the GNU Lesser General Public
+ License version 2.1 can be found in the file
+ `/usr/share/common-licenses/LGPL-2.1'.
 
-# If you want to use GPL v2 or later for the /debian/* files use 
-# the following clauses, or change it to suit. Delete these two lines
 Files: debian/*
-Copyright: 2012 Antono Vasiljev <antono@unknown>
+Copyright: 2012 Antono Vasiljev <self@antono.info>
 License: GPL-2+
  This package is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -31,6 +48,3 @@ License: GPL-2+
  .
  On Debian systems, the complete text of the GNU General
  Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
-
-# Please also look if there are files or directories which have a
-# different copyright/license attached and list them here.
