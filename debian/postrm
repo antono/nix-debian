@@ -34,9 +34,11 @@ case "$1" in
         if getent group $NIX_GROUP > /dev/null; then
             delgroup $NIX_GROUP
         fi
+
+        rm -rf /nix
     ;;
 
-    failed-upgrade|abort-install|abort-upgrade|disappear)
+    remove|failed-upgrade|abort-install|abort-upgrade|disappear)
     ;;
 
     *)
