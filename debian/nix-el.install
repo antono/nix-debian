@@ -1,2 +1,1 @@
-usr/lib/emacsen-common/*
-etc/emacs/site-start.d/*
+usr/share/emacs/site-lisp/nix
