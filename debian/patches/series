@@ -1,2 +1,3 @@
 0001-Disable-manuals.patch
 0002-Install-nix-mode-to-emacs-site-lisp-nix.patch
+0003-Export-NIX_REMOTE-daemon-in-nix-profile.patch
