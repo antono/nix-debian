@@ -4,7 +4,8 @@ Priority: extra
 Maintainer: Anton Vasiljev <self@antono.info>
 Build-Depends: debhelper (>= 8.0.0), autotools-dev, curl,
   build-essential, pkg-config, perl (>= 5.8), bzip2, libbz2-dev,
-  libsqlite3-dev, libdbd-sqlite3-perl, libgc-dev
+  libsqlite3-dev, libdbd-sqlite3-perl, libgc-dev,
+  xsltproc, libxml2-utils, docbook-xsl, docbook5-xml
 Standards-Version: 3.9.2
 Homepage: http://nixos.org/nix/
 
@@ -23,4 +24,26 @@ Description: Purely functional package manager
    - Complete dependencies
    - Multi-user support (non root users can install packages)
    - Transparent source/binary deployment
+ .
+
+Package: nix-doc
+Architecture: any
+Description: Purely functional package manager
+ Nix treats packages like values in purely functional programming
+ languages such as Haskell — they are built by functions that don’t
+ have side-effects, and they never change after they have been
+ built.
+ .
+ This package contains documentation for nix.
+ .
+
+Package: nix-el
+Architecture: any
+Description: Purely functional package manager
+ Nix treats packages like values in purely functional programming
+ languages such as Haskell — they are built by functions that don’t
+ have side-effects, and they never change after they have been
+ built.
+ .
+ This package contains emacs mode for nix expression language.
  .
