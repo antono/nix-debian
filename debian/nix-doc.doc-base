@@ -1,20 +1,10 @@
 Document: nix
-Title: Debian nix Manual
-Author: <insert document author here>
+Title: Nix Package Manager Manual
+Author: Eelco Dolstra <eelco.dolstra@logicblox.com>
 Abstract: This manual describes what nix is
- and how it can be used to
- manage online manuals on Debian systems.
-Section: unknown
-
-Format: debiandoc-sgml
-Files: /usr/share/doc/nix/nix.sgml.gz
-
-Format: postscript
-Files: /usr/share/doc/nix/nix.ps.gz
-
-Format: text
-Files: /usr/share/doc/nix/nix.text.gz
+ and how it can be used to manage packages.
+Section: admin
 
 Format: HTML
-Index: /usr/share/doc/nix/html/index.html
-Files: /usr/share/doc/nix/html/*.html
+Index: /usr/share/doc/nix/manual/index.html
+Files: /usr/share/doc/nix/manual/*.html
