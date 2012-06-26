@@ -35,7 +35,7 @@ case "$1" in
             delgroup $NIX_GROUP
         fi
 
-        rm -rf /nix
+        # TODO: rm -rf /nix # WTF :)
     ;;
 
     remove|failed-upgrade|abort-install|abort-upgrade|disappear)
