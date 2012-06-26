@@ -1,5 +1,5 @@
 Source: nix
-Section: unknown
+Section: admin
 Priority: extra
 Maintainer: Anton Vasiljev <self@antono.info>
 Build-Depends: debhelper (>= 8.0.0), autotools-dev, curl,
