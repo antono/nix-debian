@@ -1,0 +1,10 @@
+usr/bin/*
+nix/*
+usr/lib/nix/*
+etc/nix/*
+etc/init.d/*
+usr/share/man/*
+usr/share/nix/*
+usr/include/*
+usr/lib/perl5/*
+
