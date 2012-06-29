@@ -1,7 +1,7 @@
 usr/bin/*
 nix/*
 usr/lib/nix/*
-etc/nix/*
+etc/*
 usr/share/man/*
 usr/share/nix/*
 usr/include/*
