@@ -26,8 +26,19 @@ Description: Purely functional package manager
    - Transparent source/binary deployment
  .
 
-Package: nix-doc
+Package: nix-dev
 Architecture: any
+Description: Purely functional package manager
+ Nix treats packages like values in purely functional programming
+ languages such as Haskell — they are built by functions that don’t
+ have side-effects, and they never change after they have been
+ built.
+ .
+ This package contains development headers for nix.
+ .
+
+Package: nix-doc
+Architecture: all
 Description: Purely functional package manager
  Nix treats packages like values in purely functional programming
  languages such as Haskell — they are built by functions that don’t
@@ -38,7 +49,7 @@ Description: Purely functional package manager
  .
 
 Package: nix-el
-Architecture: any
+Architecture: all
 Description: Purely functional package manager
  Nix treats packages like values in purely functional programming
  languages such as Haskell — they are built by functions that don’t
