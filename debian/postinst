@@ -23,7 +23,7 @@ NIX_USER='nix-builder'
 case "$1" in
     configure)
         if ! getent group $NIX_GROUP > /dev/null; then
-            addgroup $NIX_GROUP
+            groupadd --system $NIX_GROUP
         fi
 
         for i in $(seq 1 5); do

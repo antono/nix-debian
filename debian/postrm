@@ -32,7 +32,7 @@ case "$1" in
         done
 
         if getent group $NIX_GROUP > /dev/null; then
-            delgroup $NIX_GROUP
+            groupdel $NIX_GROUP
         fi
 
         # TODO: rm -rf /nix # WTF :)
