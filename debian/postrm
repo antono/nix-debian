@@ -35,7 +35,8 @@ case "$1" in
             groupdel $NIX_GROUP
         fi
 
-        # TODO: rm -rf /nix # WTF :)
+        chattr -Rfi /nix/*
+        rm -rf /nix
     ;;
 
     remove|failed-upgrade|abort-install|abort-upgrade|disappear|upgrade)

@@ -29,10 +29,8 @@ case "$1" in
         for i in $(seq 1 5); do
             CURRENT_NIX_USER=$NIX_USER-$i
             if ! getent passwd $CURRENT_NIX_USER > /dev/null; then
-                useradd --system -M \
-                    --comment "Nix Builder #$i"
-                    --gid $NIX_GROUP --disabled-password \
-                    --shell /bin/false $CURRENT_NIX_USER
+                useradd --system -M --comment "Nix Builder #$i" \
+                    --gid $NIX_GROUP --shell /bin/false $CURRENT_NIX_USER
             fi
         done
     ;;
