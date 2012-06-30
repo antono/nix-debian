@@ -33,6 +33,8 @@ case "$1" in
                     --gid $NIX_GROUP --shell /bin/false $CURRENT_NIX_USER
             fi
         done
+
+        nix-channel --add http://nixos.org/releases/nixpkgs/channels/nixpkgs-unstable
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
