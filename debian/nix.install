@@ -4,6 +4,5 @@ usr/lib/nix/*
 etc/*
 usr/share/man/*
 usr/share/nix/*
-usr/include/*
 usr/lib/perl5/*
 
