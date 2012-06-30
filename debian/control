@@ -11,8 +11,7 @@ Homepage: http://nixos.org/nix/
 
 Package: nix
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libsqlite3-0, perl, curl,
-  wget, bzip2, libgc1c2
+Depends: ${shlibs:Depends}, ${misc:Depends}, curl, wget, bzip2, libgc1c2, libdbd-sqlite3-perl
 Description: Purely functional package manager
  Nix treats packages like values in purely functional programming
  languages such as Haskell — they are built by functions that don’t
