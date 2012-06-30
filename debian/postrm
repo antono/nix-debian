@@ -27,7 +27,7 @@ case "$1" in
         for i in $(seq 1 5); do
             CURRENT_NIX_USER=$NIX_USER-$i
             if getent passwd $CURRENT_NIX_USER > /dev/null; then
-                deluser $CURRENT_NIX_USER
+                userdel $CURRENT_NIX_USER
             fi
         done
 

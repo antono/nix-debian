@@ -29,9 +29,10 @@ case "$1" in
         for i in $(seq 1 5); do
             CURRENT_NIX_USER=$NIX_USER-$i
             if ! getent passwd $CURRENT_NIX_USER > /dev/null; then
-                adduser --system --no-create-home \
-                    --ingroup $NIX_GROUP --disabled-password \
-                    --disabled-login $CURRENT_NIX_USER
+                useradd --system -M \
+                    --comment "Nix Builder #$i"
+                    --gid $NIX_GROUP --disabled-password \
+                    --shell /bin/false $CURRENT_NIX_USER
             fi
         done
     ;;
@@ -40,12 +41,12 @@ case "$1" in
         for i in $(seq 1 5); do
             CURRENT_NIX_USER=$NIX_USER-$i
             if getent passwd $CURRENT_NIX_USER > /dev/null; then
-                deluser $CURRENT_NIX_USER
+                userdel $CURRENT_NIX_USER
             fi
         done
 
         if getent group $NIX_GROUP > /dev/null; then
-            delgroup $NIX_GROUP
+            groupdel $NIX_GROUP
         fi
     ;;
 
