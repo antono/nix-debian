@@ -4,10 +4,10 @@
 .\" Generator: DocBook XSL-NS Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: May 2012
 .\"    Manual: Command Reference
-.\"    Source: Nix 1.0
+.\"    Source: Nix 1.2
 .\"  Language: English
 .\"
-.TH "NIX\-BUILD" "1" "May 2012" "Nix 1\&.0" "Command Reference"
+.TH "NIX\-BUILD" "1" "May 2012" "Nix 1\&.2" "Command Reference"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +22,7 @@
 nix-build \- build a Nix expression
 .SH "SYNOPSIS"
 .HP \w'\fBnix\-build\fR\ 'u
-\fBnix\-build\fR [\fB\-\-help\fR] [\fB\-\-version\fR] [\fB\-\-verbose\fR...] [\fB\-v\fR...] [\fB\-\-no\-build\-output\fR] [\fB\-Q\fR] [{\fB\-\-max\-jobs\fR\ |\ \fB\-j\fR}\ \fInumber\fR] [\fB\-\-cores\fR\ \fInumber\fR] [\fB\-\-max\-silent\-time\fR\ \fInumber\fR] [\fB\-\-timeout\fR\ \fInumber\fR] [\fB\-\-keep\-going\fR] [\fB\-k\fR] [\fB\-\-keep\-failed\fR] [\fB\-K\fR] [\fB\-\-fallback\fR] [\fB\-\-readonly\-mode\fR] [\fB\-\-log\-type\fR\ \fItype\fR] [\fB\-\-show\-trace\fR] [\fB\-I\fR\ \fIpath\fR]
+\fBnix\-build\fR [\fB\-\-help\fR] [\fB\-\-version\fR] [\fB\-\-verbose\fR...] [\fB\-v\fR...] [\fB\-\-no\-build\-output\fR] [\fB\-Q\fR] [{\fB\-\-max\-jobs\fR\ |\ \fB\-j\fR}\ \fInumber\fR] [\fB\-\-cores\fR\ \fInumber\fR] [\fB\-\-max\-silent\-time\fR\ \fInumber\fR] [\fB\-\-timeout\fR\ \fInumber\fR] [\fB\-\-keep\-going\fR] [\fB\-k\fR] [\fB\-\-keep\-failed\fR] [\fB\-K\fR] [\fB\-\-fallback\fR] [\fB\-\-readonly\-mode\fR] [\fB\-\-log\-type\fR\ \fItype\fR] [\fB\-\-show\-trace\fR] [\fB\-I\fR\ \fIpath\fR] [\fB\-\-option\fR\ \fIname\fR\ \fIvalue\fR]
 .br
 [\fB\-\-arg\fR\ \fIname\fR\ \fIvalue\fR] [\fB\-\-argstr\fR\ \fIname\fR\ \fIvalue\fR] [{\fB\-\-attr\fR\ |\ \fB\-A\fR}\ \fIattrPath\fR] [\fB\-\-drv\-link\fR\ \fIdrvlink\fR] [\fB\-\-add\-drv\-link\fR] [\fB\-\-no\-out\-link\fR] [{\fB\-\-out\-link\fR\ |\ \fB\-o\fR}\ \fIoutlink\fR] [\fB\-\-run\-env\fR\ [\fB\-\-command\fR\ \fIcmd\fR]\ [\fB\-\-exclude\fR\ \fIregexp\fR]] \fIpaths\fR...
 .SH "DESCRIPTION"
@@ -360,6 +360,21 @@ take precedence over
 \fBNIX_PATH\fR\&.
 .RE
 .PP
+\fB\-\-option\fR \fIname\fR \fIvalue\fR
+.RS 4
+Set the Nix configuration option
+\fIname\fR
+to
+\fIvalue\fR\&. This overrides settings in the Nix configuration file (see
+\fBnix.conf\fR(5))\&.
+.RE
+.PP
+\fB\-\-repair\fR
+.RS 4
+Fix corrupted or missing store paths by redownloading or rebuilding them\&. Note that this is slow because it requires computing a cryptographic hash of the contents of every path in the closure of the build\&. Also note the warning under
+\fBnix\-store \-\-repair\-path\fR\&.
+.RE
+.PP
 The following options apply to
 \fBnix\-build \-\-run\-env\fR\&.
 .PP
@@ -411,7 +426,49 @@ $ \&./pan/gui/pan
 .if n \{\
 .RE
 .\}
+.PP
+If a derivation has multiple outputs,
+\fBnix\-build\fR
+will build the default (first) output\&. You can also build all outputs:
 .sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ nix\-build \'<nixpkgs>\' \-A openssl\&.all
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This will create a symlink for each output named
+result\-\fIoutputname\fR\&. The suffix is omitted if the output name is
+out\&. So if
+openssl
+has outputs
+out,
+bin
+and
+man,
+\fBnix\-build\fR
+will create symlinks
+result,
+result\-bin
+and
+result\-man\&. It\(cqs also possible to build a specific output:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ nix\-build \'<nixpkgs>\' \-A openssl\&.man
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This will create a symlink
+result\-man\&.
 .SH "ENVIRONMENT VARIABLES"
 .PP
 \fBNIX_PATH\fR
@@ -565,7 +622,7 @@ and mount multiple remote filesystems in
 .sp
 Note that if you\(cqre building through the
 Nix daemon, the only setting for this variable that matters is the one that the
-\fBnix\-worker\fR
+\fBnix\-daemon\fR
 process uses\&. So if you want to change it, you have to restart the daemon\&.
 .RE
 .PP

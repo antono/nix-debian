@@ -4,10 +4,10 @@
 .\" Generator: DocBook XSL-NS Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: May 2012
 .\"    Manual: Command Reference
-.\"    Source: Nix 1.0
+.\"    Source: Nix 1.2
 .\"  Language: English
 .\"
-.TH "NIX\-STORE" "1" "May 2012" "Nix 1\&.0" "Command Reference"
+.TH "NIX\-STORE" "1" "May 2012" "Nix 1\&.2" "Command Reference"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +22,7 @@
 nix-store \- manipulate or query the Nix store
 .SH "SYNOPSIS"
 .HP \w'\fBnix\-store\fR\ 'u
-\fBnix\-store\fR [\fB\-\-help\fR] [\fB\-\-version\fR] [\fB\-\-verbose\fR...] [\fB\-v\fR...] [\fB\-\-no\-build\-output\fR] [\fB\-Q\fR] [{\fB\-\-max\-jobs\fR\ |\ \fB\-j\fR}\ \fInumber\fR] [\fB\-\-cores\fR\ \fInumber\fR] [\fB\-\-max\-silent\-time\fR\ \fInumber\fR] [\fB\-\-timeout\fR\ \fInumber\fR] [\fB\-\-keep\-going\fR] [\fB\-k\fR] [\fB\-\-keep\-failed\fR] [\fB\-K\fR] [\fB\-\-fallback\fR] [\fB\-\-readonly\-mode\fR] [\fB\-\-log\-type\fR\ \fItype\fR] [\fB\-\-show\-trace\fR] [\fB\-I\fR\ \fIpath\fR]
+\fBnix\-store\fR [\fB\-\-help\fR] [\fB\-\-version\fR] [\fB\-\-verbose\fR...] [\fB\-v\fR...] [\fB\-\-no\-build\-output\fR] [\fB\-Q\fR] [{\fB\-\-max\-jobs\fR\ |\ \fB\-j\fR}\ \fInumber\fR] [\fB\-\-cores\fR\ \fInumber\fR] [\fB\-\-max\-silent\-time\fR\ \fInumber\fR] [\fB\-\-timeout\fR\ \fInumber\fR] [\fB\-\-keep\-going\fR] [\fB\-k\fR] [\fB\-\-keep\-failed\fR] [\fB\-K\fR] [\fB\-\-fallback\fR] [\fB\-\-readonly\-mode\fR] [\fB\-\-log\-type\fR\ \fItype\fR] [\fB\-\-show\-trace\fR] [\fB\-I\fR\ \fIpath\fR] [\fB\-\-option\fR\ \fIname\fR\ \fIvalue\fR]
 .br
 [\fB\-\-add\-root\fR\ \fIpath\fR] [\fB\-\-indirect\fR] \fIoperation\fR [\fIoptions\fR...] [\fIarguments\fR...]
 .SH "DESCRIPTION"
@@ -359,6 +359,21 @@ environment variable for details\&. Paths added through
 take precedence over
 \fBNIX_PATH\fR\&.
 .RE
+.PP
+\fB\-\-option\fR \fIname\fR \fIvalue\fR
+.RS 4
+Set the Nix configuration option
+\fIname\fR
+to
+\fIvalue\fR\&. This overrides settings in the Nix configuration file (see
+\fBnix.conf\fR(5))\&.
+.RE
+.PP
+\fB\-\-repair\fR
+.RS 4
+Fix corrupted or missing store paths by redownloading or rebuilding them\&. Note that this is slow because it requires computing a cryptographic hash of the contents of every path in the closure of the build\&. Also note the warning under
+\fBnix\-store \-\-repair\-path\fR\&.
+.RE
 .SH "OPERATION \-\-REALISE"
 .SS "Synopsis"
 .HP \w'\fBnix\-store\fR\ 'u
@@ -400,11 +415,17 @@ If the store path is not a derivation, realisation ensures that the specified pa
 .PP
 The output path of each derivation is printed on standard output\&. (For non\-derivations argument, the argument itself is printed\&.)
 .PP
-If the
+The following flags are available:
+.PP
 \fB\-\-dry\-run\fR
-option is used, then
-\fBnix\-store\fR
-will print on standard error a description of what packages would be built or downloaded, and then quit\&.
+.RS 4
+Print on standard error a description of what packages would be built or downloaded, without actually performing the operation\&.
+.RE
+.PP
+\fB\-\-ignore\-unknown\fR
+.RS 4
+If a non\-derivation path does not have a substitute, then silently ignore it\&.
+.RE
 .SS "Examples"
 .PP
 This operation is typically used to build store derivations produced by
@@ -829,20 +850,29 @@ $ nix\-store \-\-add \&./foo\&.c
 .SH "OPERATION \-\-VERIFY"
 .SS "Synopsis"
 .HP \w'\fBnix\-store\fR\ 'u
-\fBnix\-store\fR \fB\-\-verify\fR [\fB\-\-check\-contents\fR]
+\fBnix\-store\fR \fB\-\-verify\fR [\fB\-\-check\-contents\fR] [\fB\-\-repair\fR]
 .SS "Description"
 .PP
 The operation
 \fB\-\-verify\fR
 verifies the internal consistency of the Nix database, and the consistency between the Nix database and the Nix store\&. Any inconsistencies encountered are automatically repaired\&. Inconsistencies are generally the result of the Nix store or database being modified by non\-Nix tools, or of bugs in Nix itself\&.
 .PP
-There is one option:
+This operation has the following options:
 .PP
 \fB\-\-check\-contents\fR
 .RS 4
 Checks that the contents of every valid store path has not been altered by computing a SHA\-256 hash of the contents and comparing it with the hash stored in the Nix database at build time\&. Paths that have been modified are printed out\&. For large stores,
 \fB\-\-check\-contents\fR
 is obviously quite slow\&.
+.RE
+.PP
+\fB\-\-repair\fR
+.RS 4
+If any valid path is missing from the store, or (if
+\fB\-\-check\-contents\fR
+is given) the contents of a valid path has been modified, then try to repair the path by redownloading it\&. See
+\fBnix\-store \-\-repair\-path\fR
+for details\&.
 .RE
 .SH "OPERATION \-\-VERIFY\-PATH"
 .SS "Synopsis"
@@ -869,6 +899,49 @@ $ nix\-store \-\-verify\-path $(nix\-store \-qR $(which svn))
 .RE
 .\}
 .sp
+.SH "OPERATION \-\-REPAIR\-PATH"
+.SS "Synopsis"
+.HP \w'\fBnix\-store\fR\ 'u
+\fBnix\-store\fR \fB\-\-repair\-path\fR \fIpaths\fR...
+.SS "Description"
+.PP
+The operation
+\fB\-\-repair\-path\fR
+attempts to \(lqrepair\(rq the specified paths by redownloading them using the available substituters\&. If no substitutes are available, then repair is not possible\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+.PP
+During repair, there is a very small time window during which the old path (if it exists) is moved out of the way and replaced with the new path\&. If repair is interrupted in between, then the system may be left in a broken state (e\&.g\&., if the path contains a critical system component like the GNU C Library)\&.
+.sp .5v
+.RE
+.SS "Example"
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ nix\-store \-\-verify\-path /nix/store/dj7a81wsm1ijwwpkks3725661h3263p5\-glibc\-2\&.13
+path `/nix/store/dj7a81wsm1ijwwpkks3725661h3263p5\-glibc\-2\&.13\' was modified!
+  expected hash `2db57715ae90b7e31ff1f2ecb8c12ec1cc43da920efcbe3b22763f36a1861588\',
+  got `481c5aa5483ebc97c20457bb8bca24deea56550d3985cda0027f67fe54b808e4\'
+
+$ nix\-store \-\-repair\-path /nix/store/dj7a81wsm1ijwwpkks3725661h3263p5\-glibc\-2\&.13
+fetching path `/nix/store/d7a81wsm1ijwwpkks3725661h3263p5\-glibc\-2\&.13\'\&.\&.\&.
+\&...
+.fi
+.if n \{\
+.RE
+.\}
 .SH "OPERATION \-\-DUMP"
 .SS "Synopsis"
 .HP \w'\fBnix\-store\fR\ 'u
@@ -1099,8 +1172,8 @@ to clear all store paths\&.
 .RS 4
 .\}
 .nf
-$ nix\-store \-\-clear\-failed\-path /nix/store/000zi5dcla86l92jn1g997jb06sidm7x\-perl\-PerlMagick\-6\&.59
-$ nix\-store \-\-clear\-failed\-path *
+$ nix\-store \-\-clear\-failed\-paths /nix/store/000zi5dcla86l92jn1g997jb06sidm7x\-perl\-PerlMagick\-6\&.59
+$ nix\-store \-\-clear\-failed\-paths *
 .fi
 .if n \{\
 .RE
@@ -1258,7 +1331,7 @@ and mount multiple remote filesystems in
 .sp
 Note that if you\(cqre building through the
 Nix daemon, the only setting for this variable that matters is the one that the
-\fBnix\-worker\fR
+\fBnix\-daemon\fR
 process uses\&. So if you want to change it, you have to restart the daemon\&.
 .RE
 .PP

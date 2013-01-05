@@ -52,68 +52,129 @@ void queryMissing(StoreAPI & store, const PathSet & targets,
     unsigned long long & downloadSize, unsigned long long & narSize)
 {
     downloadSize = narSize = 0;
-    
+
     PathSet todo(targets.begin(), targets.end()), done;
 
+    /* Getting substitute info has high latency when using the binary
+       cache substituter.  Thus it's essential to do substitute
+       queries in parallel as much as possible.  To accomplish this
+       we do the following:
+
+       - For all paths still to be processed (‘todo’), we add all
+         paths for which we need info to the set ‘query’.  For an
+         unbuilt derivation this is the output paths; otherwise, it's
+         the path itself.
+
+       - We get info about all paths in ‘query’ in parallel.
+
+       - We process the results and add new items to ‘todo’ if
+         necessary.  E.g. if a path is substitutable, then we need to
+         get info on its references.
+
+       - Repeat until ‘todo’ is empty.
+    */
+
     while (!todo.empty()) {
-        Path p = *(todo.begin());
-        todo.erase(p);
-        if (done.find(p) != done.end()) continue;
-        done.insert(p);
 
-        if (isDerivation(p)) {
-            if (!store.isValidPath(p)) {
-                unknown.insert(p);
-                continue;
+        PathSet query, todoDrv, todoNonDrv;
+
+        foreach (PathSet::iterator, i, todo) {
+            if (done.find(*i) != done.end()) continue;
+            done.insert(*i);
+
+            DrvPathWithOutputs i2 = parseDrvPathWithOutputs(*i);
+
+            if (isDerivation(i2.first)) {
+                if (!store.isValidPath(i2.first)) {
+                    // FIXME: we could try to substitute p.
+                    unknown.insert(*i);
+                    continue;
+                }
+                Derivation drv = derivationFromPath(store, i2.first);
+
+                PathSet invalid;
+                foreach (DerivationOutputs::iterator, j, drv.outputs)
+                    if (wantOutput(j->first, i2.second)
+                        && !store.isValidPath(j->second.path))
+                        invalid.insert(j->second.path);
+                if (invalid.empty()) continue;
+
+                todoDrv.insert(*i);
+                if (settings.useSubstitutes) query.insert(invalid.begin(), invalid.end());
             }
-            Derivation drv = derivationFromPath(store, p);
 
-            bool mustBuild = false;
-            foreach (DerivationOutputs::iterator, i, drv.outputs)
-                if (!store.isValidPath(i->second.path) &&
-                    !(queryBoolSetting("build-use-substitutes", true) && store.hasSubstitutes(i->second.path)))
-                    mustBuild = true;
-
-            if (mustBuild) {
-                willBuild.insert(p);
-                todo.insert(drv.inputSrcs.begin(), drv.inputSrcs.end());
-                foreach (DerivationInputs::iterator, i, drv.inputDrvs)
-                    todo.insert(i->first);
-            } else 
-                foreach (DerivationOutputs::iterator, i, drv.outputs)
-                    todo.insert(i->second.path);
+            else {
+                if (store.isValidPath(*i)) continue;
+                query.insert(*i);
+                todoNonDrv.insert(*i);
+            }
         }
 
-        else {
-            if (store.isValidPath(p)) continue;
-            SubstitutablePathInfo info;
-            if (store.querySubstitutablePathInfo(p, info)) {
-                willSubstitute.insert(p);
-                downloadSize += info.downloadSize;
-                narSize += info.narSize;
-                todo.insert(info.references.begin(), info.references.end());
+        todo.clear();
+
+        SubstitutablePathInfos infos;
+        store.querySubstitutablePathInfos(query, infos);
+
+        foreach (PathSet::iterator, i, todoDrv) {
+            DrvPathWithOutputs i2 = parseDrvPathWithOutputs(*i);
+
+            // FIXME: cache this
+            Derivation drv = derivationFromPath(store, i2.first);
+
+            PathSet outputs;
+            bool mustBuild = false;
+            if (settings.useSubstitutes) {
+                foreach (DerivationOutputs::iterator, j, drv.outputs) {
+                    if (!wantOutput(j->first, i2.second)) continue;
+                    if (!store.isValidPath(j->second.path)) {
+                        if (infos.find(j->second.path) == infos.end())
+                            mustBuild = true;
+                        else
+                            outputs.insert(j->second.path);
+                    }
+                }
             } else
-                unknown.insert(p);
+                mustBuild = true;
+
+            if (mustBuild) {
+                willBuild.insert(i2.first);
+                todo.insert(drv.inputSrcs.begin(), drv.inputSrcs.end());
+                foreach (DerivationInputs::iterator, j, drv.inputDrvs)
+                    todo.insert(makeDrvPathWithOutputs(j->first, j->second));
+            } else
+                todoNonDrv.insert(outputs.begin(), outputs.end());
+        }
+
+        foreach (PathSet::iterator, i, todoNonDrv) {
+            done.insert(*i);
+            SubstitutablePathInfos::iterator info = infos.find(*i);
+            if (info != infos.end()) {
+                willSubstitute.insert(*i);
+                downloadSize += info->second.downloadSize;
+                narSize += info->second.narSize;
+                todo.insert(info->second.references.begin(), info->second.references.end());
+            } else
+                unknown.insert(*i);
         }
     }
 }
 
- 
+
 static void dfsVisit(StoreAPI & store, const PathSet & paths,
     const Path & path, PathSet & visited, Paths & sorted,
     PathSet & parents)
 {
     if (parents.find(path) != parents.end())
         throw BuildError(format("cycle detected in the references of `%1%'") % path);
-    
+
     if (visited.find(path) != visited.end()) return;
     visited.insert(path);
     parents.insert(path);
-    
+
     PathSet references;
     if (store.isValidPath(path))
         store.queryReferences(path, references);
-    
+
     foreach (PathSet::iterator, i, references)
         /* Don't traverse into paths that don't exist.  That can
            happen due to substitutes for non-existent paths. */

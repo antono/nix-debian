@@ -1,6 +1,4 @@
-#ifndef __WORKER_PROTOCOL_H
-#define __WORKER_PROTOCOL_H
-
+#pragma once
 
 namespace nix {
 
@@ -8,7 +6,7 @@ namespace nix {
 #define WORKER_MAGIC_1 0x6e697863
 #define WORKER_MAGIC_2 0x6478696f
 
-#define PROTOCOL_VERSION 0x10a
+#define PROTOCOL_VERSION 0x10c
 #define GET_PROTOCOL_MAJOR(x) ((x) & 0xff00)
 #define GET_PROTOCOL_MINOR(x) ((x) & 0x00ff)
 
@@ -22,7 +20,7 @@ typedef enum {
     wopQueryReferrers = 6,
     wopAddToStore = 7,
     wopAddTextToStore = 8,
-    wopBuildDerivations = 9,
+    wopBuildPaths = 9,
     wopEnsurePath = 10,
     wopAddTempRoot = 11,
     wopAddIndirectRoot = 12,
@@ -34,12 +32,16 @@ typedef enum {
     wopCollectGarbage = 20,
     wopQuerySubstitutablePathInfo = 21,
     wopQueryDerivationOutputs = 22,
-    wopQueryValidPaths = 23,
+    wopQueryAllValidPaths = 23,
     wopQueryFailedPaths = 24,
     wopClearFailedPaths = 25,
     wopQueryPathInfo = 26,
     wopImportPaths = 27,
     wopQueryDerivationOutputNames = 28,
+    wopQueryPathFromHashPart = 29,
+    wopQuerySubstitutablePathInfos = 30,
+    wopQueryValidPaths = 31,
+    wopQuerySubstitutablePaths = 32,
 } WorkerOp;
 
 
@@ -61,8 +63,5 @@ typedef enum {
 Path readStorePath(Source & from);
 template<class T> T readStorePaths(Source & from);
 
-    
+
 }
-
-
-#endif /* !__WORKER_PROTOCOL_H */

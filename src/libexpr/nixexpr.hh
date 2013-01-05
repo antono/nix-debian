@@ -1,5 +1,4 @@
-#ifndef __NIXEXPR_H
-#define __NIXEXPR_H
+#pragma once
 
 #include "value.hh"
 #include "symbol-table.hh"
@@ -28,6 +27,15 @@ struct Pos
     Pos() : line(0), column(0) { };
     Pos(const string & file, unsigned int line, unsigned int column)
         : file(file), line(line), column(column) { };
+    bool operator < (const Pos & p2) const
+    {
+        int d = file.compare(p2.file);
+        if (d < 0) return true;
+        if (d > 0) return false;
+        if (line < p2.line) return true;
+        if (line > p2.line) return false;
+        return column < p2.column;
+    }
 };
 
 extern Pos noPos;
@@ -290,6 +298,3 @@ struct StaticEnv
 
 
 }
-
-
-#endif /* !__NIXEXPR_H */

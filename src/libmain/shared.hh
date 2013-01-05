@@ -1,5 +1,4 @@
-#ifndef __SHARED_H
-#define __SHARED_H
+#pragma once
 
 #include "util.hh"
 
@@ -27,10 +26,13 @@ MakeError(UsageError, nix::Error);
 class StoreAPI;
 
 /* Ugh.  No better place to put this. */
-Path makeRootName(const Path & gcRoot, int & counter);
 void printGCWarning();
 
 void printMissing(StoreAPI & store, const PathSet & paths);
+
+void printMissing(const PathSet & willBuild,
+    const PathSet & willSubstitute, const PathSet & unknown,
+    unsigned long long downloadSize, unsigned long long narSize);
 
 template<class N> N getIntArg(const string & opt,
     Strings::iterator & i, const Strings::iterator & end)
@@ -43,8 +45,8 @@ template<class N> N getIntArg(const string & opt,
     return n;
 }
 
-/* Whether we're running setuid. */
-extern bool setuidMode;
+/* Show the manual page for the specified program. */
+void showManPage(const string & name);
 
 extern volatile ::sig_atomic_t blockInt;
 
@@ -54,6 +56,3 @@ extern int exitCode;
 extern char * * argvSaved;
 
 }
-
-
-#endif /* !__SHARED_H */

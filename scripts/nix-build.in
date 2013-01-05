@@ -33,29 +33,12 @@ for (my $n = 0; $n < scalar @ARGV; $n++) {
     my $arg = $ARGV[$n];
 
     if ($arg eq "--help") {
-        print STDERR <<EOF;
-Usage: nix-build [OPTION]... [FILE]...
+        exec "man nix-build" or die;
+    }
 
-`nix-build' builds the given Nix expressions (which
-default to ./default.nix if none are given).  A symlink called
-`result' is placed in the current directory.
-
-Flags:
-  --add-drv-link: create a symlink `derivation' to the store derivation
-  --drv-link NAME: create symlink NAME instead of `derivation'
-  --no-out-link: do not create the `result' symlink
-  --out-link / -o NAME: create symlink NAME instead of `result'
-  --attr / -A ATTR: select a specific attribute from the Nix expression
-  
-  --run-env: build dependencies of the specified derivation, then start a
-      shell with the environment of the derivation
-  --command: command to run with `--run-env'
-  --exclude: regexp specifying dependencies to be excluded by `--run-env'
-
-Any additional flags are passed to `nix-store'.
-EOF
+    elsif ($arg eq "--version") {
+        print "nix-build (Nix) $Nix::Config::version\n";
         exit 0;
-        # '` hack
     }
 
     elsif ($arg eq "--add-drv-link") {
@@ -114,26 +97,30 @@ EOF
         push @buildArgs, "--dry-run";
         $dryRun = 1;
     }
-    
+
     elsif ($arg eq "--show-trace") {
         push @instArgs, $arg;
     }
-    
+
+    elsif ($arg eq "-") {
+        @exprs = ("-");
+    }
+
     elsif ($arg eq "--verbose" or substr($arg, 0, 2) eq "-v") {
         push @buildArgs, $arg;
         push @instArgs, $arg;
         $verbose = 1;
     }
-    
-    elsif ($arg eq "--quiet") {
+
+    elsif ($arg eq "--quiet" || $arg eq "--repair") {
         push @buildArgs, $arg;
         push @instArgs, $arg;
     }
-    
+
     elsif ($arg eq "--run-env") {
         $runEnv = 1;
     }
-    
+
     elsif ($arg eq "--command") {
         $n++;
         die "$0: `$arg' requires an argument\n" unless $n < scalar @ARGV;
@@ -194,15 +181,33 @@ foreach my $expr (@exprs) {
         die;
     }
 
+    # Ugly hackery to make "nix-build -A foo.all" produce symlinks
+    # ./result, ./result-dev, and so on, rather than ./result,
+    # ./result-2-dev, and so on.  This combines multiple derivation
+    # paths into one "/nix/store/drv-path!out1,out2,..." argument.
+    my $prevDrvPath = "";
+    my @drvPaths2;
     foreach my $drvPath (@drvPaths) {
-        my $target = readlink $drvPath or die "cannot read symlink `$drvPath'";
+        my $p = $drvPath; my $output = "out";
+        if ($drvPath =~ /(.*)!(.*)/) {
+            $p = $1; $output = $2;
+        } else {
+            $p = $drvPath;
+        }
+        my $target = readlink $p or die "cannot read symlink `$p'";
         print STDERR "derivation is $target\n" if $verbose;
+        if ($target eq $prevDrvPath) {
+            push @drvPaths2, (pop @drvPaths2) . "," . $output;
+        } else {
+            push @drvPaths2, $target . "!" . $output;
+            $prevDrvPath = $target;
+        }
     }
 
     # Build.
     my @outPaths;
     $pid = open(OUTPATHS, "-|") || exec "$Nix::Config::binDir/nix-store", "--add-root", $outLink, "--indirect", "-r",
-        @buildArgs, @drvPaths;
+        @buildArgs, @drvPaths2;
     while (<OUTPATHS>) {chomp; push @outPaths, $_;}
     if (!close OUTPATHS) {
         die "nix-store killed by signal " . ($? & 127) . "\n" if ($? & 127);

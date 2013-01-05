@@ -224,12 +224,12 @@ string readFile(int fd)
 }
 
 
-string readFile(const Path & path)
+string readFile(const Path & path, bool drain)
 {
     AutoCloseFD fd = open(path.c_str(), O_RDONLY);
     if (fd == -1)
         throw SysError(format("opening file `%1%'") % path);
-    return readFile(fd);
+    return drain ? drainFD(fd) : readFile(fd);
 }
 
 
@@ -253,7 +253,7 @@ string readLine(int fd)
             if (errno != EINTR)
                 throw SysError("reading a line");
         } else if (rd == 0)
-            throw Error("unexpected EOF reading a line");
+            throw EndOfFile("unexpected EOF reading a line");
         else {
             if (ch == '\n') return s;
             s += ch;
@@ -297,8 +297,7 @@ void computePathSize(const Path & path,
 }
 
 
-static void _deletePath(const Path & path, unsigned long long & bytesFreed,
-    unsigned long long & blocksFreed)
+static void _deletePath(const Path & path, unsigned long long & bytesFreed)
 {
     checkInterrupt();
 
@@ -308,10 +307,8 @@ static void _deletePath(const Path & path, unsigned long long & bytesFreed,
 
     if (S_ISDIR(st.st_mode) || S_ISREG(st.st_mode)) makeMutable(path);
 
-    if (!S_ISDIR(st.st_mode) && st.st_nlink == 1) {
-        bytesFreed += st.st_size;
-        blocksFreed += st.st_blocks;
-    }
+    if (!S_ISDIR(st.st_mode) && st.st_nlink == 1)
+        bytesFreed += st.st_blocks * 512;
 
     if (S_ISDIR(st.st_mode)) {
 	Strings names = readDirectory(path);
@@ -323,7 +320,7 @@ static void _deletePath(const Path & path, unsigned long long & bytesFreed,
 	}
 
 	for (Strings::iterator i = names.begin(); i != names.end(); ++i)
-            _deletePath(path + "/" + *i, bytesFreed, blocksFreed);
+            _deletePath(path + "/" + *i, bytesFreed);
     }
 
     if (remove(path.c_str()) == -1)
@@ -333,19 +330,17 @@ static void _deletePath(const Path & path, unsigned long long & bytesFreed,
 
 void deletePath(const Path & path)
 {
-    unsigned long long dummy1, dummy2;
-    deletePath(path, dummy1, dummy2);
+    unsigned long long dummy;
+    deletePath(path, dummy);
 }
 
 
-void deletePath(const Path & path, unsigned long long & bytesFreed,
-    unsigned long long & blocksFreed)
+void deletePath(const Path & path, unsigned long long & bytesFreed)
 {
     startNest(nest, lvlDebug,
         format("recursively deleting path `%1%'") % path);
     bytesFreed = 0;
-    blocksFreed = 0;
-    _deletePath(path, bytesFreed, blocksFreed);
+    _deletePath(path, bytesFreed);
 }
 
 
@@ -380,7 +375,7 @@ static Path tempName(Path tmpRoot, const Path & prefix, bool includePid,
 
 
 Path createTempDir(const Path & tmpRoot, const Path & prefix,
-    bool includePid, bool useGlobalCounter)
+    bool includePid, bool useGlobalCounter, mode_t mode)
 {
     static int globalCounter = 0;
     int localCounter = 0;
@@ -389,7 +384,7 @@ Path createTempDir(const Path & tmpRoot, const Path & prefix,
     while (1) {
         checkInterrupt();
 	Path tmpDir = tempName(tmpRoot, prefix, includePid, counter);
-	if (mkdir(tmpDir.c_str(), 0777) == 0) {
+	if (mkdir(tmpDir.c_str(), mode) == 0) {
 	    /* Explicitly set the group of the directory.  This is to
 	       work around around problems caused by BSD's group
 	       ownership semantics (directories inherit the group of
@@ -488,16 +483,7 @@ void printMsg_(Verbosity level, const format & f)
     else if (logType == ltEscapes && level != lvlInfo)
         prefix = "\033[" + escVerbosity(level) + "s";
     string s = (format("%1%%2%\n") % prefix % f.str()).str();
-    try {
-        writeToStderr((const unsigned char *) s.data(), s.size());
-    } catch (SysError & e) {
-        /* Ignore failing writes to stderr if we're in an exception
-           handler, otherwise throw an exception.  We need to ignore
-           write errors in exception handlers to ensure that cleanup
-           code runs to completion if the other side of stderr has
-           been closed unexpectedly. */
-        if (!std::uncaught_exception()) throw;
-    }
+    writeToStderr(s);
 }
 
 
@@ -510,13 +496,28 @@ void warnOnce(bool & haveWarned, const format & f)
 }
 
 
+void writeToStderr(const string & s)
+{
+    try {
+        _writeToStderr((const unsigned char *) s.data(), s.size());
+    } catch (SysError & e) {
+        /* Ignore failing writes to stderr if we're in an exception
+           handler, otherwise throw an exception.  We need to ignore
+           write errors in exception handlers to ensure that cleanup
+           code runs to completion if the other side of stderr has
+           been closed unexpectedly. */
+        if (!std::uncaught_exception()) throw;
+    }
+}
+
+
 static void defaultWriteToStderr(const unsigned char * buf, size_t count)
 {
     writeFull(STDERR_FILENO, buf, count);
 }
 
 
-void (*writeToStderr) (const unsigned char * buf, size_t count) = defaultWriteToStderr;
+void (*_writeToStderr) (const unsigned char * buf, size_t count) = defaultWriteToStderr;
 
 
 void readFull(int fd, unsigned char * buf, size_t count)
@@ -657,7 +658,7 @@ void AutoCloseFD::close()
     if (fd != -1) {
         if (::close(fd) == -1)
             /* This should never happen. */
-            throw SysError("closing file descriptor");
+            throw SysError(format("closing file descriptor %1%") % fd);
         fd = -1;
     }
 }
@@ -765,8 +766,8 @@ Pid::operator pid_t()
 
 void Pid::kill()
 {
-    if (pid == -1) return;
-    
+    if (pid == -1 || pid == 0) return;
+
     printMsg(lvlError, format("killing process %1%") % pid);
 
     /* Send the requested signal to the child.  If it has its own
@@ -779,8 +780,11 @@ void Pid::kill()
     int status;
     while (waitpid(pid, &status, 0) == -1) {
         checkInterrupt();
-        if (errno != EINTR) printMsg(lvlError,
-            (SysError(format("waiting for process %1%") % pid).msg()));
+        if (errno != EINTR) {
+            printMsg(lvlError,
+                (SysError(format("waiting for process %1%") % pid).msg()));
+            break;
+        }
     }
 
     pid = -1;
@@ -847,11 +851,10 @@ void killUser(uid_t uid)
 	    }
 
         } catch (std::exception & e) {
-            std::cerr << format("killing processes belonging to uid `%1%': %2%")
-                % uid % e.what() << std::endl;
-            quickExit(1);
+            writeToStderr((format("killing processes belonging to uid `%1%': %2%\n") % uid % e.what()).str());
+            _exit(1);
         }
-        quickExit(0);
+        _exit(0);
     }
     
     /* parent */
@@ -872,14 +875,21 @@ void killUser(uid_t uid)
 string runProgram(Path program, bool searchPath, const Strings & args)
 {
     checkInterrupt();
-    
+
+    std::vector<const char *> cargs; /* careful with c_str()! */
+    cargs.push_back(program.c_str());
+    for (Strings::const_iterator i = args.begin(); i != args.end(); ++i)
+        cargs.push_back(i->c_str());
+    cargs.push_back(0);
+
     /* Create a pipe. */
     Pipe pipe;
     pipe.create();
 
     /* Fork. */
     Pid pid;
-    pid = fork();
+    pid = maybeVfork();
+
     switch (pid) {
 
     case -1:
@@ -887,27 +897,19 @@ string runProgram(Path program, bool searchPath, const Strings & args)
 
     case 0: /* child */
         try {
-            pipe.readSide.close();
-
             if (dup2(pipe.writeSide, STDOUT_FILENO) == -1)
                 throw SysError("dupping stdout");
-
-            std::vector<const char *> cargs; /* careful with c_str()! */
-            cargs.push_back(program.c_str());
-            for (Strings::const_iterator i = args.begin(); i != args.end(); ++i)
-                cargs.push_back(i->c_str());
-            cargs.push_back(0);
 
             if (searchPath)
                 execvp(program.c_str(), (char * *) &cargs[0]);
             else
                 execv(program.c_str(), (char * *) &cargs[0]);
             throw SysError(format("executing `%1%'") % program);
-            
+
         } catch (std::exception & e) {
-            std::cerr << "error: " << e.what() << std::endl;
+            writeToStderr("error: " + string(e.what()) + "\n");
         }
-        quickExit(1);
+        _exit(1);
     }
 
     /* Parent. */
@@ -946,12 +948,6 @@ void closeOnExec(int fd)
 }
 
 
-void quickExit(int status)
-{
-    _exit(status);
-}
-
-
 void setuidCleanup()
 {
     /* Don't trust the environment. */
@@ -963,6 +959,13 @@ void setuidCleanup()
         if (fstat(fd, &st) == -1) abort();
     }
 }
+
+
+#if HAVE_VFORK
+pid_t (*maybeVfork)() = vfork;
+#else
+pid_t (*maybeVfork)() = fork;
+#endif
 
 
 //////////////////////////////////////////////////////////////////////
@@ -986,19 +989,23 @@ void _interrupted()
 //////////////////////////////////////////////////////////////////////
 
 
-Strings tokenizeString(const string & s, const string & separators)
+template<class C> C tokenizeString(const string & s, const string & separators)
 {
-    Strings result;
+    C result;
     string::size_type pos = s.find_first_not_of(separators, 0);
     while (pos != string::npos) {
         string::size_type end = s.find_first_of(separators, pos + 1);
         if (end == string::npos) end = s.size();
         string token(s, pos, end - pos);
-        result.push_back(token);
+        result.insert(result.end(), token);
         pos = s.find_first_not_of(separators, end);
     }
     return result;
 }
+
+template Strings tokenizeString(const string & s, const string & separators);
+template StringSet tokenizeString(const string & s, const string & separators);
+template vector<string> tokenizeString(const string & s, const string & separators);
 
 
 string concatStringsSep(const string & sep, const Strings & ss)
@@ -1009,6 +1016,24 @@ string concatStringsSep(const string & sep, const Strings & ss)
         s += *i;
     }
     return s;
+}
+
+
+string concatStringsSep(const string & sep, const StringSet & ss)
+{
+    string s;
+    foreach (StringSet::const_iterator, i, ss) {
+        if (s.size() != 0) s += sep;
+        s += *i;
+    }
+    return s;
+}
+
+
+string chomp(const string & s)
+{
+    size_t i = s.find_last_not_of(" \n\r\t");
+    return i == string::npos ? "" : string(s, 0, i + 1);
 }
 
 
@@ -1093,6 +1118,21 @@ bool endOfList(std::istream & str)
 }
 
 
+string decodeOctalEscaped(const string & s)
+{
+    string r;
+    for (string::const_iterator i = s.begin(); i != s.end(); ) {
+        if (*i != '\\') { r += *i++; continue; }
+        unsigned char c = 0;
+        ++i;
+        while (i != s.end() && *i >= '0' && *i < '8')
+            c = c * 8 + (*i++ - '0');
+        r += c;
+    }
+    return r;
+}
+
+
 void ignoreException()
 {
     try {
@@ -1102,5 +1142,5 @@ void ignoreException()
     }
 }
 
- 
+
 }

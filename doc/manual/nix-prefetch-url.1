@@ -4,10 +4,10 @@
 .\" Generator: DocBook XSL-NS Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: May 2012
 .\"    Manual: Command Reference
-.\"    Source: Nix 1.0
+.\"    Source: Nix 1.2
 .\"  Language: English
 .\"
-.TH "NIX\-PREFETCH\-URL" "1" "May 2012" "Nix 1\&.0" "Command Reference"
+.TH "NIX\-PREFETCH\-URL" "1" "May 2012" "Nix 1\&.2" "Command Reference"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +22,7 @@
 nix-prefetch-url \- copy a file from a URL into the store and print its hash
 .SH "SYNOPSIS"
 .HP \w'\fBnix\-prefetch\-url\fR\ 'u
-\fBnix\-prefetch\-url\fR \fIurl\fR [\fIhash\fR]
+\fBnix\-prefetch\-url\fR [\fB\-\-type\fR\ \fIhashAlgo\fR] \fIurl\fR [\fIhash\fR]
 .SH "DESCRIPTION"
 .PP
 The command
@@ -45,14 +45,6 @@ fetchurl
 uses the same name for the downloaded file as
 \fBnix\-prefetch\-url\fR, the redundant download can be avoided\&.
 .PP
-The environment variable
-\fBNIX_HASH_ALGO\fR
-specifies which hash algorithm to use\&. It can be either
-md5,
-sha1, or
-sha256\&. The default is
-sha256\&.
-.PP
 If
 \fIhash\fR
 is specified, then a download is not performed if the Nix store already contains a file with the same hash and base name\&. Otherwise, the file is downloaded, and an error if signaled if the actual hash of the file does not match the specified hash\&.
@@ -60,6 +52,15 @@ is specified, then a download is not performed if the Nix store already contains
 This command prints the hash on standard output\&. Additionally, if the environment variable
 \fBPRINT_PATH\fR
 is set, the path of the downloaded file in the Nix store is also printed\&.
+.SH "OPTIONS"
+.PP
+\fB\-\-type\fR \fIhashAlgo\fR
+.RS 4
+Use the specified cryptographic hash algorithm, which can be one of
+md5,
+sha1, and
+sha256\&.
+.RE
 .SH "EXAMPLES"
 .sp
 .if n \{\

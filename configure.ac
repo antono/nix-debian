@@ -25,12 +25,12 @@ AC_ARG_WITH(system, AC_HELP_STRING([--with-system=SYSTEM],
 
    case "$host_os" in
      linux-gnu*)
-	# For backward compatibility, strip the `-gnu' part.
-	system="$machine_name-linux";;
+        # For backward compatibility, strip the `-gnu' part.
+        system="$machine_name-linux";;
      *)
         # Strip the version number from names such as `gnu0.3',
         # `darwin10.2.0', etc.
-	system="$machine_name-`echo $host_os | "$SED" -e's/@<:@0-9.@:>@*$//g'`";;
+        system="$machine_name-`echo $host_os | "$SED" -e's/@<:@0-9.@:>@*$//g'`";;
    esac])
 
 sys_name=$(uname -s | tr 'A-Z ' 'a-z_')
@@ -40,7 +40,7 @@ case $sys_name in
         sys_name=cygwin
         ;;
 esac
-   
+
 AC_MSG_RESULT($system)
 AC_SUBST(system)
 AC_DEFINE_UNQUOTED(SYSTEM, ["$system"], [platform identifier (`cpu-os')])
@@ -115,6 +115,27 @@ AC_CHECK_HEADERS([sys/mount.h], [], [],
 ])
 
 
+# Check for vfork.
+#AC_FUNC_FORK()
+
+
+# Check for lutimes, optionally used for changing the mtime of
+# symlinks.
+AC_CHECK_FUNCS([lutimes])
+
+
+# Check whether the store optimiser can optimise symlinks.
+AC_MSG_CHECKING([whether it is possible to create a link to a symlink])
+ln -s bla tmp_link
+if ln tmp_link tmp_link2 2> /dev/null; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(CAN_LINK_SYMLINK, 1, [Whether link() works on symlinks.])
+else
+    AC_MSG_RESULT(no)
+fi
+rm -f tmp_link tmp_link2
+
+
 # Check for <locale>.
 AC_LANG_PUSH(C++)
 AC_CHECK_HEADERS([locale])
@@ -161,6 +182,7 @@ NEED_PROG(perl, perl)
 NEED_PROG(sed, sed)
 NEED_PROG(tar, tar)
 NEED_PROG(bzip2, bzip2)
+NEED_PROG(xz, xz)
 AC_PATH_PROG(dot, dot)
 AC_PATH_PROG(dblatex, dblatex)
 AC_PATH_PROG(gzip, gzip)
@@ -249,7 +271,7 @@ if test "$gc" = yes; then
 fi
 
 
-# Check for the required Perl dependencies (DBI and DBD::SQLite).
+# Check for the required Perl dependencies (DBI, DBD::SQLite and WWW::Curl).
 perlFlags="-I$perllibdir"
 
 AC_ARG_WITH(dbi, AC_HELP_STRING([--with-dbi=PATH],
@@ -260,13 +282,24 @@ AC_ARG_WITH(dbd-sqlite, AC_HELP_STRING([--with-dbd-sqlite=PATH],
   [prefix of the Perl DBD::SQLite library]),
   perlFlags="$perlFlags -I$withval")
 
+AC_ARG_WITH(www-curl, AC_HELP_STRING([--with-www-curl=PATH],
+  [prefix of the Perl WWW::Curl library]),
+  perlFlags="$perlFlags -I$withval")
+
 AC_MSG_CHECKING([whether DBD::SQLite works])
 if ! $perl $perlFlags -e 'use DBI; use DBD::SQLite;' 2>&5; then
     AC_MSG_RESULT(no)
     AC_MSG_FAILURE([The Perl modules DBI and/or DBD::SQLite are missing.])
 fi
 AC_MSG_RESULT(yes)
-  
+
+AC_MSG_CHECKING([whether WWW::Curl works])
+if ! $perl $perlFlags -e 'use WWW::Curl;' 2>&5; then
+    AC_MSG_RESULT(no)
+    AC_MSG_FAILURE([The Perl module WWW::Curl is missing.])
+fi
+AC_MSG_RESULT(yes)
+
 AC_SUBST(perlFlags)
 
 
@@ -310,10 +343,21 @@ eval dynlib_suffix=$shrext_cmds
 AC_SUBST(dynlib_suffix)
 
 
+# Do we have GNU tar?
+AC_MSG_CHECKING([if you have a recent GNU tar])
+if $tar --version 2> /dev/null | grep -q GNU && tar cvf /dev/null --warning=no-timestamp ./config.log > /dev/null; then
+    AC_MSG_RESULT(yes)
+    tarFlags="--warning=no-timestamp"
+else
+    AC_MSG_RESULT(no)
+fi
+AC_SUBST(tarFlags)
+
+
+
 AM_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile
    src/Makefile
-   src/bin2c/Makefile
    src/boost/Makefile
    src/boost/format/Makefile
    src/libutil/Makefile
@@ -324,7 +368,7 @@ AC_CONFIG_FILES([Makefile
    src/libexpr/Makefile
    src/nix-instantiate/Makefile
    src/nix-env/Makefile
-   src/nix-worker/Makefile
+   src/nix-daemon/Makefile
    src/nix-setuid-helper/Makefile
    src/nix-log2xml/Makefile
    src/bsdiff-4.3/Makefile
