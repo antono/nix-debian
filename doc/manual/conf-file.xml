@@ -1,27 +1,39 @@
-<section xmlns="http://docbook.org/ns/docbook"
-         xmlns:xlink="http://www.w3.org/1999/xlink"
-         xml:id="sec-conf-file">
+<refentry xmlns="http://docbook.org/ns/docbook"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
+          xmlns:xi="http://www.w3.org/2001/XInclude"
+          xml:id="sec-conf-file">
 
-<title>Nix configuration file</title>
+<refmeta>
+  <refentrytitle>nix.conf</refentrytitle>
+  <manvolnum>5</manvolnum>
+  <refmiscinfo class="source">Nix</refmiscinfo>
+  <refmiscinfo class="version"><xi:include href="version.txt" parse="text"/></refmiscinfo>
+</refmeta>
 
+<refnamediv>
+  <refname>nix.conf</refname>
+  <refpurpose>Nix configuration file</refpurpose>
+</refnamediv>
+
+<refsection><title>Description</title>
 
 <para>A number of persistent settings of Nix are stored in the file
 <filename><replaceable>sysconfdir</replaceable>/nix/nix.conf</filename>.
 This file is a list of <literal><replaceable>name</replaceable> =
 <replaceable>value</replaceable></literal> pairs, one per line.
-Comments start with a <literal>#</literal> character.  An example
-configuration file is shown in <xref linkend="ex-nix-conf" />.</para>
-
-<example xml:id='ex-nix-conf'><title>Nix configuration file</title>
+Comments start with a <literal>#</literal> character.  Here is an example
+configuration file:</para>
 
 <programlisting>
 gc-keep-outputs = true       # Nice for developers
 gc-keep-derivations = true   # Idem
 env-keep-derivations = false
 </programlisting>
-</example>
 
-<para>The following variables are currently available: 
+<para>You can override settings using the <option>--option</option>
+flag, e.g. <literal>--option gc-keep-outputs false</literal>.</para>
+
+<para>The following settings are currently available: 
 
 <variablelist>
 
@@ -189,10 +201,8 @@ env-keep-derivations = false
     under the uid of the Nix process (that is, the uid of the caller
     if <envar>NIX_REMOTE</envar> is empty, the uid under which the Nix
     daemon runs if <envar>NIX_REMOTE</envar> is
-    <literal>daemon</literal>, or the uid that owns the setuid
-    <command>nix-worker</command> program if <envar>NIX_REMOTE</envar>
-    is <literal>slave</literal>).  Obviously, this should not be used
-    in multi-user settings with untrusted users.</para>
+    <literal>daemon</literal>).  Obviously, this should not be used in
+    multi-user settings with untrusted users.</para>
 
     </listitem>
 
@@ -230,6 +240,16 @@ env-keep-derivations = false
     <listitem><para>If set to <literal>true</literal> (default), Nix
     will use binary substitutes if available.  This option can be
     disabled to force building from source.</para></listitem>
+
+  </varlistentry>
+
+    
+  <varlistentry><term><literal>build-fallback</literal></term>
+
+    <listitem><para>If set to <literal>true</literal>, Nix will fall
+    back to building from source if a binary substitute fails.  This
+    is equivalent to the <option>--fallback</option> flag.  The
+    default is <literal>false</literal>.</para></listitem>
 
   </varlistentry>
 
@@ -276,6 +296,94 @@ build-use-chroot = /dev /proc /bin</programlisting>
   </varlistentry>
 
 
+  <varlistentry><term><literal>build-keep-log</literal></term>
+
+    <listitem><para>If set to <literal>true</literal> (the default),
+    Nix will write the build log of a derivation (i.e. the standard
+    output and error of its builder) to the directory
+    <filename>/nix/var/log/nix/drvs</filename>.  The build log can be
+    retrieved using the command <command>nix-store -l
+    <replaceable>path</replaceable></command>.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>build-compress-log</literal></term>
+
+    <listitem><para>If set to <literal>true</literal> (the default),
+    build logs written to <filename>/nix/var/log/nix/drvs</filename>
+    will be compressed on the fly using bzip2.  Otherwise, they will
+    not be compressed.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>use-binary-caches</literal></term>
+
+    <listitem><para>If set to <literal>true</literal> (the default),
+    Nix will check the binary caches specified by
+    <option>binary-caches</option> and related options to obtain
+    binary substitutes.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>binary-caches</literal></term>
+
+    <listitem><para>A list of URLs of binary caches, separated by
+    whitespace.  The default is empty.<!-- The default is
+    <literal>http://nixos.org/binary-cache</literal>. --></para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>binary-caches-files</literal></term>
+
+    <listitem><para>A list of names of files that will be read to
+    obtain additional binary cache URLs.  The default is
+    <literal>/nix/var/nix/profiles/per-user/root/channels/binary-caches/*</literal>,
+    which ensures that Nix will use the binary caches corresponding to
+    the channels installed by root.  Do not set this option to read
+    files created by untrusted users!</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>trusted-binary-caches</literal></term>
+
+    <listitem><para>A list of URLs of binary caches, separated by
+    whitespace.  These are not used by default, but can be enabled by
+    users of the Nix daemon by specifying <literal>--option
+    binary-caches <replaceable>urls</replaceable></literal> on the
+    command line.  Daemon users are only allowed to pass a subset of
+    the URLs listed in <literal>binary-caches</literal> and
+    <literal>trusted-binary-caches</literal>.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>binary-caches-parallel-connections</literal></term>
+
+    <listitem><para>The maximum number of parallel HTTP connections
+    used by the binary cache substituter to get NAR info files.  This
+    number should be high to minimise latency.  It defaults to
+    150.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>force-manifest</literal></term>
+
+    <listitem><para>If this option is set to <literal>false</literal>
+    (default) and a Nix channel provides both a manifest and a binary
+    cache, only the binary cache will be used.  If set to
+    <literal>true</literal>, the manifest will be fetched as well.
+    This is useful if you want to use binary patches (which are
+    currently not supported by binary caches).</para></listitem>
+
+  </varlistentry>
+
+
   <varlistentry><term><literal>system</literal></term>
 
     <listitem><para>This option specifies the canonical Nix system
@@ -306,10 +414,24 @@ build-use-chroot = /dev /proc /bin</programlisting>
     <literal>true</literal>.</para></listitem>
 
   </varlistentry>
-    
+
+  
+  <varlistentry><term><literal>auto-optimise-store</literal></term>
+
+    <listitem><para>If set to <literal>true</literal> (the default),
+    Nix automatically detects files in the store that have identical
+    contents, and replaces them with hard links to a single copy.
+    This saves disk space.  If set to <literal>false</literal>, you
+    can still run <command>nix-store --optimise</command> to get rid
+    of duplicate files.</para></listitem>
+
+  </varlistentry>
+
+
 </variablelist>
 
 </para>
 
+</refsection>
 
-</section>
+</refentry>

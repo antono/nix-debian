@@ -1,5 +1,4 @@
-#ifndef __REMOTE_STORE_H
-#define __REMOTE_STORE_H
+#pragma once
 
 #include <string>
 
@@ -27,7 +26,9 @@ public:
     
     bool isValidPath(const Path & path);
 
-    PathSet queryValidPaths();
+    PathSet queryValidPaths(const PathSet & paths);
+    
+    PathSet queryAllValidPaths();
     
     ValidPathInfo queryPathInfo(const Path & path);
 
@@ -43,24 +44,26 @@ public:
     
     StringSet queryDerivationOutputNames(const Path & path);
 
-    bool hasSubstitutes(const Path & path);
+    Path queryPathFromHashPart(const string & hashPart);
     
-    bool querySubstitutablePathInfo(const Path & path,
-        SubstitutablePathInfo & info);
+    PathSet querySubstitutablePaths(const PathSet & paths);
+    
+    void querySubstitutablePathInfos(const PathSet & paths,
+        SubstitutablePathInfos & infos);
     
     Path addToStore(const Path & srcPath,
         bool recursive = true, HashType hashAlgo = htSHA256,
-        PathFilter & filter = defaultPathFilter);
+        PathFilter & filter = defaultPathFilter, bool repair = false);
 
     Path addTextToStore(const string & name, const string & s,
-        const PathSet & references);
+        const PathSet & references, bool repair = false);
 
     void exportPath(const Path & path, bool sign,
         Sink & sink);
 
     Paths importPaths(bool requireSignature, Source & source);
     
-    void buildDerivations(const PathSet & drvPaths);
+    void buildPaths(const PathSet & paths, bool repair = false);
 
     void ensurePath(const Path & path);
 
@@ -86,12 +89,10 @@ private:
     unsigned int daemonVersion;
     bool initialised;
 
-    void openConnection();
+    void openConnection(bool reserveSpace = true);
 
     void processStderr(Sink * sink = 0, Source * source = 0);
 
-    void forkSlave();
-    
     void connectToDaemon();
 
     void setOptions();
@@ -99,6 +100,3 @@ private:
 
 
 }
-
-
-#endif /* !__REMOTE_STORE_H */

@@ -10,7 +10,7 @@ pkginclude_HEADERS = \
   globals.hh references.hh pathlocks.hh \
   worker-protocol.hh
 
-libstore_la_LIBADD = ../libutil/libutil.la ../boost/format/libformat.la @SQLITE3_LIBS@
+libstore_la_LIBADD = ../libutil/libutil.la ../boost/format/libformat.la @SQLITE3_LIBS@ -lbz2
 
 EXTRA_DIST = schema.sql
 
@@ -23,10 +23,11 @@ AM_CXXFLAGS = -Wall \
  -DNIX_CONF_DIR=\"$(sysconfdir)/nix\" \
  -DNIX_LIBEXEC_DIR=\"$(libexecdir)\" \
  -DNIX_BIN_DIR=\"$(bindir)\" \
+ -DNIX_VERSION=\"$(VERSION)\" \
  -I$(srcdir)/.. -I$(srcdir)/../libutil \
  -I$(srcdir)/../libstore
 
 local-store.lo: schema.sql.hh
 
 %.sql.hh: %.sql
-	../bin2c/bin2c schema < $< > $@ || (rm $@ && exit 1)
+	sed -e 's/"/\\"/g' -e 's/\(.*\)/"\1\\n"/' < $< > $@ || (rm $@ && exit 1)

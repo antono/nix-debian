@@ -1,6 +1,9 @@
 /* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Whether link() works on symlinks. */
+#define CAN_LINK_SYMLINK 1
+
 /* Whether to use the Boehm garbage collector. */
 /* #undef HAVE_BOEHMGC */
 
@@ -24,6 +27,9 @@
 
 /* Define to 1 if you have the <locale> header file. */
 #define HAVE_LOCALE 1
+
+/* Define to 1 if you have the `lutimes' function. */
+#define HAVE_LUTIMES 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -96,7 +102,7 @@
 #define LT_OBJDIR ".libs/"
 
 /* Nix version. */
-#define NIX_VERSION "1.0"
+#define NIX_VERSION "1.2"
 
 /* Path of the OpenSSL binary */
 #define OPENSSL_PATH "/nix/store/h0q955qx57zck3b73mg6f4x3951qhs5p-openssl-1.0.0i/bin/openssl"
@@ -111,7 +117,7 @@
 #define PACKAGE_NAME "nix"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "nix 1.0"
+#define PACKAGE_STRING "nix 1.2"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "nix"
@@ -120,7 +126,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.0"
+#define PACKAGE_VERSION "1.2"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
@@ -129,7 +135,12 @@
 #define SYSTEM "x86_64-linux"
 
 /* Version number of package */
-#define VERSION "1.0"
+#define VERSION "1.2"
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 /* #undef _FILE_OFFSET_BITS */

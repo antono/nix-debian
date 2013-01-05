@@ -1,5 +1,4 @@
-#ifndef __STOREAPI_H
-#define __STOREAPI_H
+#pragma once
 
 #include "hash.hh"
 #include "serialise.hh"
@@ -49,8 +48,7 @@ struct GCOptions
     /* For `gcDeleteSpecific', the paths to delete. */
     PathSet pathsToDelete;
 
-    /* Stop after at least `maxFreed' bytes have been freed.  0 means
-       no limit. */
+    /* Stop after at least `maxFreed' bytes have been freed. */
     unsigned long long maxFreed;
 
     GCOptions();
@@ -67,13 +65,9 @@ struct GCResults
        number of bytes that would be or was freed. */
     unsigned long long bytesFreed;
 
-    /* The number of file system blocks that would be or was freed. */
-    unsigned long long blocksFreed;
-
     GCResults()
     {
         bytesFreed = 0;
-        blocksFreed = 0;
     }
 };
 
@@ -85,6 +79,8 @@ struct SubstitutablePathInfo
     unsigned long long downloadSize; /* 0 = unknown or inapplicable */
     unsigned long long narSize; /* 0 = unknown */
 };
+
+typedef std::map<Path, SubstitutablePathInfo> SubstitutablePathInfos;
 
 
 struct ValidPathInfo 
@@ -108,20 +104,23 @@ public:
 
     virtual ~StoreAPI() { }
 
-    /* Checks whether a path is valid. */ 
+    /* Check whether a path is valid. */ 
     virtual bool isValidPath(const Path & path) = 0;
 
-    /* Query the set of valid paths. */
-    virtual PathSet queryValidPaths() = 0;
+    /* Query which of the given paths is valid. */
+    virtual PathSet queryValidPaths(const PathSet & paths) = 0;
+
+    /* Query the set of all valid paths. */
+    virtual PathSet queryAllValidPaths() = 0;
 
     /* Query information about a valid path. */
     virtual ValidPathInfo queryPathInfo(const Path & path) = 0;
 
-    /* Queries the hash of a valid path. */ 
+    /* Query the hash of a valid path. */ 
     virtual Hash queryPathHash(const Path & path) = 0;
 
-    /* Queries the set of outgoing FS references for a store path.
-       The result is not cleared. */
+    /* Query the set of outgoing FS references for a store path.  The
+       result is not cleared. */
     virtual void queryReferences(const Path & path,
         PathSet & references) = 0;
 
@@ -139,14 +138,19 @@ public:
 
     /* Query the output names of the derivation denoted by `path'. */
     virtual StringSet queryDerivationOutputNames(const Path & path) = 0;
-    
-    /* Query whether a path has substitutes. */
-    virtual bool hasSubstitutes(const Path & path) = 0;
 
-    /* Query the references, deriver and download size of a
-       substitutable path. */
-    virtual bool querySubstitutablePathInfo(const Path & path,
-        SubstitutablePathInfo & info) = 0;
+    /* Query the full store path given the hash part of a valid store
+       path, or "" if the path doesn't exist. */
+    virtual Path queryPathFromHashPart(const string & hashPart) = 0;
+    
+    /* Query which of the given paths have substitutes. */
+    virtual PathSet querySubstitutablePaths(const PathSet & paths) = 0;
+
+    /* Query substitute info (i.e. references, derivers and download
+       sizes) of a set of paths.  If a path does not have substitute
+       info, it's omitted from the resulting ‘infos’ map. */
+    virtual void querySubstitutablePathInfos(const PathSet & paths,
+        SubstitutablePathInfos & infos) = 0;
     
     /* Copy the contents of a path to the store and register the
        validity the resulting path.  The resulting path is returned.
@@ -154,12 +158,12 @@ public:
        libutil/archive.hh). */
     virtual Path addToStore(const Path & srcPath,
         bool recursive = true, HashType hashAlgo = htSHA256,
-        PathFilter & filter = defaultPathFilter) = 0;
+        PathFilter & filter = defaultPathFilter, bool repair = false) = 0;
 
     /* Like addToStore, but the contents written to the output path is
        a regular file containing the given string. */
     virtual Path addTextToStore(const string & name, const string & s,
-        const PathSet & references) = 0;
+        const PathSet & references, bool repair = false) = 0;
 
     /* Export a store path, that is, create a NAR dump of the store
        path and append its references and its deriver.  Optionally, a
@@ -172,13 +176,15 @@ public:
        the Nix store. */
     virtual Paths importPaths(bool requireSignature, Source & source) = 0;
 
-    /* Ensure that the output paths of the derivation are valid.  If
+    /* For each path, if it's a derivation, build it.  Building a
+       derivation means ensuring that the output paths are valid.  If
        they are already valid, this is a no-op.  Otherwise, validity
        can be reached in two ways.  First, if the output paths is
        substitutable, then build the path that way.  Second, the
        output paths can be created by running the builder, after
-       recursively building any sub-derivations. */
-    virtual void buildDerivations(const PathSet & drvPaths) = 0;
+       recursively building any sub-derivations. For inputs that are
+       not derivations, substitute them. */
+    virtual void buildPaths(const PathSet & paths, bool repair = false) = 0;
 
     /* Ensure that a path is valid.  If it is not currently valid, it
        may be made valid by running a substitute (if defined for the
@@ -327,7 +333,7 @@ extern boost::shared_ptr<StoreAPI> store;
 
 /* Factory method: open the Nix database, either through the local or
    remote implementation. */
-boost::shared_ptr<StoreAPI> openStore();
+boost::shared_ptr<StoreAPI> openStore(bool reserveSpace = true);
 
 
 /* Display a set of paths in human-readable form (i.e., between quotes
@@ -350,6 +356,3 @@ MakeError(BuildError, Error) /* denotes a permanent build failure */
 
 
 }
-
-
-#endif /* !__STOREAPI_H */

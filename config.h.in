@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Whether link() works on symlinks. */
+#undef CAN_LINK_SYMLINK
+
 /* Whether to use the Boehm garbage collector. */
 #undef HAVE_BOEHMGC
 
@@ -23,6 +26,9 @@
 
 /* Define to 1 if you have the <locale> header file. */
 #undef HAVE_LOCALE
+
+/* Define to 1 if you have the `lutimes' function. */
+#undef HAVE_LUTIMES
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -129,6 +135,11 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 #undef _FILE_OFFSET_BITS

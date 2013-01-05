@@ -19,7 +19,7 @@ void doInit()
 {
     if (!store) {
         try {
-            setDefaultsFromEnvironment();
+            settings.processEnvironment();
             store = openStore();
         } catch (Error & e) {
             croak(e.what());
@@ -86,7 +86,7 @@ SV * queryDeriver(char * path)
         }
 
 
-SV * queryPathInfo(char * path)
+SV * queryPathInfo(char * path, int base32)
     PPCODE:
         try {
             doInit();
@@ -95,7 +95,7 @@ SV * queryPathInfo(char * path)
                 XPUSHs(&PL_sv_undef);
             else
                 XPUSHs(sv_2mortal(newSVpv(info.deriver.c_str(), 0)));
-            string s = "sha256:" + printHash(info.hash);
+            string s = "sha256:" + (base32 ? printHash32(info.hash) : printHash(info.hash));
             XPUSHs(sv_2mortal(newSVpv(s.c_str(), 0)));
             mXPUSHi(info.registrationTime);
             mXPUSHi(info.narSize);
@@ -103,6 +103,17 @@ SV * queryPathInfo(char * path)
             for (PathSet::iterator i = info.references.begin(); i != info.references.end(); ++i)
                 av_push(arr, newSVpv(i->c_str(), 0));
             XPUSHs(sv_2mortal(newRV((SV *) arr)));
+        } catch (Error & e) {
+            croak(e.what());
+        }
+
+
+SV * queryPathFromHashPart(char * hashPart)
+    PPCODE:
+        try {
+            doInit();
+            Path path = store->queryPathFromHashPart(hashPart);
+            XPUSHs(sv_2mortal(newSVpv(path.c_str(), 0)));
         } catch (Error & e) {
             croak(e.what());
         }

@@ -2,7 +2,7 @@
 #include "globals.hh"
 #include "util.hh"
 
-#include <limits.h>
+#include <climits>
 
 
 namespace nix {
@@ -12,23 +12,23 @@ GCOptions::GCOptions()
 {
     action = gcDeleteDead;
     ignoreLiveness = false;
-    maxFreed = 0;
+    maxFreed = ULLONG_MAX;
 }
 
 
 bool isInStore(const Path & path)
 {
     return path[0] == '/'
-        && string(path, 0, nixStore.size()) == nixStore
-        && path.size() >= nixStore.size() + 2
-        && path[nixStore.size()] == '/';
+        && string(path, 0, settings.nixStore.size()) == settings.nixStore
+        && path.size() >= settings.nixStore.size() + 2
+        && path[settings.nixStore.size()] == '/';
 }
 
 
 bool isStorePath(const Path & path)
 {
     return isInStore(path)
-        && path.find('/', nixStore.size() + 1) == Path::npos;
+        && path.find('/', settings.nixStore.size() + 1) == Path::npos;
 }
 
 
@@ -43,7 +43,7 @@ Path toStorePath(const Path & path)
 {
     if (!isInStore(path))
         throw Error(format("path `%1%' is not in the Nix store") % path);
-    Path::size_type slash = path.find('/', nixStore.size() + 1);
+    Path::size_type slash = path.find('/', settings.nixStore.size() + 1);
     if (slash == Path::npos)
         return path;
     else
@@ -74,7 +74,7 @@ Path followLinksToStorePath(const Path & path)
 string storePathToName(const Path & path)
 {
     assertStorePath(path);
-    return string(path, nixStore.size() + 34);
+    return string(path, settings.nixStore.size() + 34);
 }
 
 
@@ -173,11 +173,11 @@ Path makeStorePath(const string & type,
 {
     /* e.g., "source:sha256:1abc...:/nix/store:foo.tar.gz" */
     string s = type + ":sha256:" + printHash(hash) + ":"
-        + nixStore + ":" + name;
+        + settings.nixStore + ":" + name;
 
     checkStoreName(name);
 
-    return nixStore + "/"
+    return settings.nixStore + "/"
         + printHash32(compressHash(hashString(htSHA256, s), 20))
         + "-" + name;
 }
@@ -322,10 +322,10 @@ namespace nix {
 boost::shared_ptr<StoreAPI> store;
 
 
-boost::shared_ptr<StoreAPI> openStore()
+boost::shared_ptr<StoreAPI> openStore(bool reserveSpace)
 {
     if (getEnv("NIX_REMOTE") == "")
-        return boost::shared_ptr<StoreAPI>(new LocalStore());
+        return boost::shared_ptr<StoreAPI>(new LocalStore(reserveSpace));
     else
         return boost::shared_ptr<StoreAPI>(new RemoteStore());
 }

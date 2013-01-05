@@ -5,7 +5,7 @@
 
     <title>Nix User's Guide</title>
 
-    <edition>Version 1.0</edition>
+    <edition>Version 1.2</edition>
 
     <author>
       <personname>
@@ -253,7 +253,7 @@ href="docs/papers.html#servicecm">SCM-12 paper</a>.</para>
 <simplesect><title>Portability</title>
 
 <para>Nix should run on most Unix systems, including Linux, FreeBSD and
-Mac OS X.  It is also supported on Windows using Cygwin.</para>
+Mac OS X.<!-- It is also supported on Windows using Cygwin.--></para>
 
 </simplesect>
 
@@ -390,7 +390,7 @@ file).</para></listitem>
 <listitem><para>Subscribe to the Nix Packages channel.
 
 <screen>
-$ nix-channel --add http://nixos.org/releases/nixpkgs/channels/nixpkgs-unstable</screen>
+$ nix-channel --add http://nixos.org/channels/nixpkgs-unstable</screen>
 
 </para></listitem>
 
@@ -528,10 +528,144 @@ platforms as well.</para>
 </section>
 
 
-<section><title>Obtaining Nix</title>
+<section><title>Installing a binary distribution</title>
 
-<para>The easiest way to obtain Nix is to download a <link xlink:href="http://nixos.org/">source distribution</link>.  RPMs
-for Red Hat, SuSE, and Fedora Core are also available.</para>
+<para>The easiest way to install Nix is to use a binary package.
+Binary packages of the latest stable release are available for Fedora,
+Debian, Ubuntu, Mac OS X and various other systems from the <link xlink:href="http://nixos.org/nix/download.html">Nix homepage</link>.
+You can also get builds of the latest development release from our
+<link xlink:href="http://hydra.nixos.org/view/nix/trunk/latest">continuous
+build system</link>.</para>
+
+<para>For Fedora, RPM packages are available.  These can be installed
+or upgraded using <command>rpm -U</command>.  For example,
+
+<screen>
+$ rpm -U nix-1.0-1.i386.rpm</screen>
+
+</para>
+
+<para>For Debian and Ubuntu, you can download a Deb package and
+install it like this:
+
+<screen>
+$ dpkg -i nix_1.0-1_amd64.deb</screen>
+
+</para>
+
+<para>For other platforms, including Mac OS X (Darwin), FreeBSD and
+other Linux distributions, you can download a binary tarball.  It
+contains Nix and all its dependencies.  You should unpack it in the
+root directory, then run <command>nix-finish-install</command>:
+
+<screen>
+$ cd /
+$ tar xfj nix-1.1-x86_64-darwin.tar.bz2
+$ nix-finish-install
+</screen>
+
+After this you can delete
+<filename>/usr/bin/nix-finish-install</filename>.</para>
+
+<para>If you plan to use Nix from a single non-root user account, it&#x2019;s
+probably convenient to change the ownership of the entire Nix store
+and database to that user account.  In that case, install as follows:
+
+<screen>
+alice$ cd /
+alice$ sudo tar xfj nix-1.1-x86_64-darwin.tar.bz2
+alice$ sudo chown -R alice /nix
+alice$ nix-finish-install
+</screen>
+
+</para>
+
+<para>Nix can be uninstalled using <command>rpm -e nix</command> or
+<command>dpkg -r nix</command> on RPM- and Dpkg-based systems,
+respectively.  After this you should manually remove the Nix store and
+other auxiliary data, if desired:
+
+<screen>
+$ rm -rf /nix</screen>
+
+</para>
+
+</section>
+
+
+<section><title>Installing Nix from source</title>
+
+<para>If no binary package is available, you can download and compile
+a source distribution.</para>
+
+<section><title>Prerequisites</title>
+
+<itemizedlist>
+
+  <listitem><para>GNU Make.</para></listitem>
+
+  <listitem><para>A fairly recent version of GCC/G++.  Version 2.95
+  and higher should work.  Clang will also work.</para></listitem>
+
+  <listitem><para>Perl 5.8 or higher.</para></listitem>
+
+  <listitem><para><command>pkg-config</command> to locate
+  dependencies.  If your distribution does not provide it, you can get
+  it from <link xlink:href="http://www.freedesktop.org/wiki/Software/pkg-config"/>.</para></listitem>
+
+  <listitem><para>The bzip2 compressor program and the
+  <literal>libbz2</literal> library.  Thus you must have bzip2
+  installed, including development headers and libraries.  If your
+  distribution does not provide these, you can obtain bzip2 from <link xlink:href="http://www.bzip.org/"/>.</para></listitem>
+
+  <listitem><para>The SQLite embedded database library, version 3.6.19
+  or higher.  If your distribution does not provide it, please install
+  it from <link xlink:href="http://www.sqlite.org/"/>.</para></listitem>
+
+  <listitem><para>The Perl DBI and DBD::SQLite libraries, which are
+  available from <link xlink:href="http://search.cpan.org/">CPAN</link> if your
+  distribution does not provide them.</para></listitem>
+
+  <listitem><para>The <link xlink:href="http://www.hpl.hp.com/personal/Hans_Boehm/gc/">Boehm
+  garbage collector</link> to reduce the evaluator&#x2019;s memory
+  consumption (optional).  To enable it, install
+  <literal>pkgconfig</literal> and the Boehm garbage collector, and
+  pass the flag <option>--enable-gc</option> to
+  <command>configure</command>.</para></listitem>
+
+  <listitem><para>The <command>xmllint</command> and
+  <command>xsltproc</command> programs to build this manual and the
+  man-pages.  These are part of the <literal>libxml2</literal> and
+  <literal>libxslt</literal> packages, respectively.  You also need
+  the <link xlink:href="http://docbook.sourceforge.net/projects/xsl/">DocBook
+  XSL stylesheets</link> and optionally the <link xlink:href="http://www.docbook.org/schemas/5x"> DocBook 5.0 RELAX NG
+  schemas</link>.  Note that these are only required if you modify the
+  manual sources or when you are building from the Git
+  repository.</para></listitem>
+
+  <listitem><para>Recent versions of Bison and Flex to build the
+  parser.  (This is because Nix needs GLR support in Bison and
+  reentrancy support in Flex.)  For Bison, you need version 2.3 or
+  higher (1.875 does <emphasis>not</emphasis> work), which can be
+  obtained from the <link xlink:href="ftp://alpha.gnu.org/pub/gnu/bison">GNU FTP
+  server</link>.  For Flex, you need version 2.5.33, which is
+  available on <link xlink:href="http://lex.sourceforge.net/">SourceForge</link>.
+  Slightly older versions may also work, but ancient versions like the
+  ubiquitous 2.5.4a won't.  Note that these are only required if you
+  modify the parser or when you are building from the Git
+  repository.</para></listitem>
+
+</itemizedlist>
+
+</section>
+
+
+<section><title>Obtaining a source distribution</title>
+
+<para>The source tarball of the most recent stable release can be
+downloaded from the <link xlink:href="http://nixos.org/nix/download.html">Nix homepage</link>.
+You can also grab the <link xlink:href="http://hydra.nixos.org/view/nix/trunk/latest/tarball/download-by-type/file/source-dist">most
+recent development release</link>.</para>
 
 <para>Alternatively, the most recent sources of Nix can be obtained
 from its <link xlink:href="https://github.com/NixOS/nix">Git
@@ -548,63 +682,6 @@ repository.</para>
 </section>
 
 
-<section><title>Prerequisites</title>
-
-<para><emphasis>The following prerequisites only apply when you build
-from source</emphasis>.  Binary releases (e.g., RPMs) have no
-prerequisites.</para>
-
-<para>A fairly recent version of GCC/G++ is required.  Version 2.95
-and higher should work.  Clang will also work.</para>
-
-<para>Nix requires Perl, version 5.8 or higher.</para>
-
-<para>Nix requires <command>pkg-config</command> to locate its
-dependencies.  If your distribution does not provide it, you can get
-it from <link xlink:href="http://www.freedesktop.org/wiki/Software/pkg-config"/>.</para>
-
-<para>Nix requires the bzip2 compressor program and the
-<literal>libbz2</literal> library.  Thus you must have bzip2
-installed, including development headers and libraries.  If your
-distribution does not provide these, you can obtain bzip2 from <link xlink:href="http://www.bzip.org/"/>.</para>
-
-<para>Nix requires the SQLite embedded database library, version
-3.6.19 or higher.  If your distribution does not provide it, please
-install it from <link xlink:href="http://www.sqlite.org/"/>.</para>
-
-<para>Nix requires the Perl DBI and DBD::SQLite libraries, which are
-available from <link xlink:href="http://search.cpan.org/">CPAN</link>
-if your distribution does not provide them.</para>
-
-<para>Nix can optionally use the <link xlink:href="http://www.hpl.hp.com/personal/Hans_Boehm/gc/">Boehm
-garbage collector</link> to reduce the evaluator&#x2019;s memory consumption.
-To enable it, install <literal>pkgconfig</literal> and the Boehm
-garbage collector, and pass the flag <option>--enable-gc</option> to
-<command>configure</command>.</para>
-
-<para>To build this manual and the man-pages you need the
-<command>xmllint</command> and <command>xsltproc</command> programs,
-which are part of the <literal>libxml2</literal> and
-<literal>libxslt</literal> packages, respectively.  You also need the
-<link xlink:href="http://docbook.sourceforge.net/projects/xsl/">DocBook XSL
-stylesheets</link> and optionally the <link xlink:href="http://www.docbook.org/schemas/5x"> DocBook 5.0 RELAX NG
-schemas</link>.  Note that these are only required if you modify the
-manual sources or when you are building from the Git
-repository.</para>
-
-<para>To build the parser, very <emphasis>recent</emphasis> versions
-of Bison and Flex are required.  (This is because Nix needs GLR
-support in Bison and reentrancy support in Flex.)  For Bison, you need
-version 2.3 or higher (1.875 does <emphasis>not</emphasis> work),
-which can be obtained from the <link xlink:href="ftp://alpha.gnu.org/pub/gnu/bison">GNU FTP server</link>.
-For Flex, you need version 2.5.33, which is available on <link xlink:href="http://lex.sourceforge.net/">SourceForge</link>.  Slightly
-older versions may also work, but ancient versions like the ubiquitous
-2.5.4a won't.  Note that these are only required if you modify the
-parser or when you are building from the Git repository.</para>
-
-</section>
-
-
 <section><title>Building Nix from source</title>
 
 <para>After unpacking or checking out the Nix sources, issue the
@@ -615,7 +692,8 @@ $ ./configure <replaceable>options...</replaceable>
 $ make
 $ make install</screen>
 
-</para>
+Nix requires GNU Make so you may need to invoke
+<command>gmake</command> instead.</para>
 
 <para>When building from the Git repository, these should be preceded
 by the command:
@@ -656,32 +734,6 @@ options.</para>
 
 </section>
 
-
-<section><title>Installing a binary distribution</title>
-
-<para>RPM and Deb packages of Nix for a number of different versions
-of Fedora, openSUSE, Debian and Ubuntu can be downloaded from <link xlink:href="http://nixos.org/"/>.  Once downloaded, the RPMs can be
-installed or upgraded using <command>rpm -U</command>.  For example,
-
-<screen>
-$ rpm -U nix-0.13pre18104-1.i386.rpm</screen>
-
-Likewise, for a Deb package:
-
-<screen>
-$ dpkg -i nix_0.13pre18104-1_amd64.deb</screen>
-
-</para>
-
-<para>Nix can be uninstalled using <command>rpm -e nix</command> or
-<command>dpkg -r nix</command>.  After this you should manually remove
-the Nix store and other auxiliary data, if desired:
-
-<screen>
-$ rm -rf /nix/store
-$ rm -rf /nix/var</screen>
-
-</para>
 
 </section>
 
@@ -829,11 +881,11 @@ $ chown -R root /nix/store /nix/var/nix</screen>
 
 </para>
 
-<para>The <link linkend="sec-nix-worker">Nix daemon</link> should be
+<para>The <link linkend="sec-nix-daemon">Nix daemon</link> should be
 started as follows (as <literal>root</literal>):
 
 <screen>
-$ nix-worker --daemon</screen>
+$ nix-daemon</screen>
 
 You&#x2019;ll want to put that line somewhere in your system&#x2019;s boot
 scripts.</para>
@@ -867,11 +919,11 @@ named anything.  It should own the Nix store and database:
 <screen>
 $ chown -R nix /nix/store /nix/var/nix</screen>
 
-and of course <command>nix-worker --daemon</command> should be started
-under that user, e.g.,
+and of course <command>nix-daemon</command> should be started under
+that user, e.g.,
 
 <screen>
-$ su - nix -c "exec /nix/bin/nix-worker --daemon"</screen>
+$ su - nix -c "exec /nix/bin/nix-daemon"</screen>
 
 </para>
 
@@ -1133,21 +1185,6 @@ upgrading `graphviz-1.10' to `graphviz-1.12'
 upgrading `coreutils-5.0' to `coreutils-5.2.1'</screen>
 
 </para>
-
-<para>If you grow bored of specifying the Nix expressions using
-<parameter>-f</parameter> all the time, you can set a default
-location:
-
-<screen>
-$ nix-env -I nixpkgs-<replaceable>version</replaceable></screen>
-
-After this you can just say, for instance, <literal>nix-env -u
-'*'</literal>.<footnote><para>Setting a default using
-<parameter>-I</parameter> currently clashes with using Nix channels,
-since <literal>nix-channel --update</literal> calls <literal>nix-env
--I</literal> to set the default to the Nix expressions it downloaded
-from the channel, replacing whatever default you had
-set.</para></footnote></para>
 
 </section>
 
@@ -1414,7 +1451,7 @@ URL.</para>
 <command>nix-channel --add</command>, e.g.,
 
 <screen>
-$ nix-channel --add http://nixos.org/releases/nixpkgs/channels/nixpkgs-unstable</screen>
+$ nix-channel --add http://nixos.org/channels/nixpkgs-unstable</screen>
 
 subscribes you to a channel that always contains that latest version
 of the Nix Packages collection.  (Instead of
@@ -1656,7 +1693,7 @@ the single Nix expression in that directory
     here, the entire remainder of the file is the body of the
     function; when given the required arguments, the body should
     describe how to build an instance of the Hello package.</para>
-    
+
   </callout>
 
   <callout arearefs="ex-hello-nix-co-2">
@@ -1740,7 +1777,7 @@ perl = perl;</programlisting>
     with the same name happen to be in scope.</para>
 
   </callout>
-  
+
 </calloutlist>
 
 </para>
@@ -1851,7 +1888,7 @@ steps:</para>
     (<literal>make install</literal>).</para>
 
   </callout>
-  
+
 </calloutlist>
 
 <para>If you are wondering about the absence of error checking on the
@@ -1871,7 +1908,7 @@ error check.</para>
 ...
 
 rec { <co xml:id="ex-hello-composition-co-1"/>
-  
+
   hello = import ../applications/misc/hello/ex-1 <co xml:id="ex-hello-composition-co-2"/> { <co xml:id="ex-hello-composition-co-3"/>
     inherit fetchurl stdenv perl;
   };
@@ -1880,10 +1917,10 @@ rec { <co xml:id="ex-hello-composition-co-1"/>
     inherit fetchurl stdenv;
   };
 
-  fetchurl = import ../build-support/fetchurl { 
+  fetchurl = import ../build-support/fetchurl {
     inherit stdenv; ...
   };
-  
+
   stdenv = ...;
 
 }
@@ -2023,8 +2060,8 @@ that the path denoted by <envar>out</envar> is now
 will see that the path is already valid and finish immediately.  If a
 build fails, either because it returns a non-zero exit code, because
 Nix or the builder are killed, or because the machine crashes, then
-the output path will not be registered as valid.  If you try to build
-the derivation again, Nix will remove the output path if it exists
+the output paths will not be registered as valid.  If you try to build
+the derivation again, Nix will remove the output paths if they exist
 (e.g., because the builder died half-way through <literal>make
 install</literal>) and try again.  Note that there is no
 <quote>negative caching</quote>: Nix doesn't remember that a build
@@ -2089,7 +2126,7 @@ genericBuild <co xml:id="ex-hello-builder2-co-3"/></programlisting>
 <calloutlist>
 
   <callout arearefs="ex-hello-builder2-co-1">
-    
+
     <para>The <envar>buildInputs</envar> variable tells
     <filename>setup</filename> to use the indicated packages as
     <quote>inputs</quote>.  This means that if a package provides a
@@ -2114,7 +2151,7 @@ genericBuild <co xml:id="ex-hello-builder2-co-3"/></programlisting>
     the file <literal>$stdenv/setup</literal>.</para>
 
   </callout>
-  
+
   <callout arearefs="ex-hello-builder2-co-3">
 
     <para>The final step calls the shell function
@@ -2126,7 +2163,7 @@ genericBuild <co xml:id="ex-hello-builder2-co-3"/></programlisting>
     see <xref linkend="sec-standard-environment"/>.</para>
 
   </callout>
-  
+
 </calloutlist>
 
 <para>Discerning readers will note that the
@@ -2249,7 +2286,7 @@ configureFlags = "
     the third line is indented three spaces.  Thus, two spaces are
     stripped from each line, so the resulting string is
 
-<programlisting>    
+<programlisting>
 "This is the first line.\nThis is the second line.\n  This is the third line.\n"</programlisting>
 
     </para>
@@ -2271,7 +2308,7 @@ configureFlags = "
     linefeed, carriage-return and tab characters can be writted as
     <literal>''\n</literal>, <literal>''\r</literal>,
     <literal>''\t</literal>.</para>
-    
+
     <para>Indented strings are primarily useful in that they allow
     multi-line string literals to follow the indentation of the
     enclosing Nix expression, and that less escaping is typically
@@ -2290,7 +2327,7 @@ stdenv.mkDerivation {
       ${if enableBar then "cp bar $out/bin" else ""}
     '';
   <replaceable>...</replaceable>
-}    
+}
 </programlisting>
 
     </para>
@@ -2325,7 +2362,7 @@ stdenv.mkDerivation {
   <listitem><para><emphasis>Booleans</emphasis> with values
   <literal>true</literal> and
   <literal>false</literal>.</para></listitem>
-  
+
 </itemizedlist>
 
 </para>
@@ -2475,7 +2512,7 @@ propagate attributes).  This can be shortened using the
 <literal>inherit</literal> keyword.  For instance,
 
 <programlisting>
-let x = 123; in 
+let x = 123; in
 { inherit x;
   y = 456;
 }</programlisting>
@@ -2526,7 +2563,7 @@ argument.  There are three kinds of patterns:</para>
 
 <itemizedlist>
 
-  
+
   <listitem><para>If a pattern is a single identifier, then the
   function matches any argument.  Example:
 
@@ -2546,7 +2583,7 @@ map (concat "foo") [ "bar" "bla" "abc" ]</programlisting>
   evaluates to <literal>[ "foobar" "foobla"
   "fooabc" ]</literal>.</para></listitem>
 
-  
+
   <listitem><para>An <emphasis>attribute set pattern</emphasis> of the
   form <literal>{ name1, name2, &#x2026;, nameN }</literal>
   matches an attribute set containing the listed attributes, and binds
@@ -2560,7 +2597,7 @@ map (concat "foo") [ "bar" "bla" "abc" ]</programlisting>
   <varname>x</varname>, <varname>y</varname> and
   <varname>z</varname>.  No other attributes are allowed.  If you want
   to allow additional arguments, you can use an ellipsis
-  (<literal>...</literal>): 
+  (<literal>...</literal>):
 
 <programlisting>
 { x, y, z, ... }: z + y + x</programlisting>
@@ -2708,7 +2745,7 @@ used in the Nix expression for Subversion.</para>
 </calloutlist>
 
 </simplesect>
-  
+
 
 
 <simplesect><title>With-expressions</title>
@@ -2886,7 +2923,7 @@ set, the attributes of which specify the inputs of the build.</para>
   <listitem><para>There must be an attribute named
   <varname>name</varname> whose value must be a string.  This is used
   as a symbolic name for the package by <command>nix-env</command>,
-  and it is appended to the hash in the output path of the
+  and it is appended to the output paths of the
   derivation.</para></listitem>
 
   <listitem><para>There must be an attribute named
@@ -2901,7 +2938,7 @@ set, the attributes of which specify the inputs of the build.</para>
 
     <itemizedlist>
 
-      <listitem><para>Strings, URIs, and integers are just passed
+      <listitem><para>Strings and integers are just passed
       verbatim.</para></listitem>
 
       <listitem><para>A <emphasis>path</emphasis> (e.g.,
@@ -2912,8 +2949,8 @@ set, the attributes of which specify the inputs of the build.</para>
       should reside in the Nix store.</para></listitem>
 
       <listitem><para>A <emphasis>derivation</emphasis> causes that
-      derivation to be built prior to the present derivation; the
-      output path is put in the environment
+      derivation to be built prior to the present derivation; its
+      default output path is put in the environment
       variable.</para></listitem>
 
       <listitem><para>Lists of the previous types are also allowed.
@@ -2932,13 +2969,47 @@ set, the attributes of which specify the inputs of the build.</para>
   specifies command-line arguments to be passed to the builder.  It
   should be a list.</para></listitem>
 
+  <listitem><para>The optional attribute <varname>outputs</varname>
+  specifies a list of symbolic outputs of the derivation.  By default,
+  a derivation produces a single output path, denoted as
+  <literal>out</literal>.  However, derivations can produce multiple
+  output paths.  This is useful because it allows outputs to be
+  downloaded or garbage-collected separately.  For instance, imagine a
+  library package that provides a dynamic library, header files, and
+  documentation.  A program that links against the library doesn&#x2019;t
+  need the header files and documentation at runtime, and it doesn&#x2019;t
+  need the documentation at build time.  Thus, the library package
+  could specify:
+<programlisting>
+outputs = [ "lib" "headers" "doc" ];
+</programlisting>
+  This will cause Nix to pass environment variables
+  <literal>lib</literal>, <literal>headers</literal> and
+  <literal>doc</literal> to the builder containing the intended store
+  paths of each output.  The builder would typically do something like
+<programlisting>
+./configure --libdir=$lib/lib --includedir=$headers/include --docdir=$doc/share/doc
+</programlisting>
+  for an Autoconf-style package.  You can refer to each output of a
+  derivation by selecting it as an attribute, e.g.
+<programlisting>
+buildInputs = [ pkg.lib pkg.headers ];
+</programlisting>
+  The first element of <varname>output</varname> determines the
+  <emphasis>default output</emphasis>.  Thus, you could also write
+<programlisting>
+buildInputs = [ pkg pkg.headers ];
+</programlisting>
+  since <literal>pkg</literal> is equivalent to
+  <literal>pkg.lib</literal>.</para></listitem>
+
 </itemizedlist>
 
-<para>(Note that <function>mkDerivation</function> in the standard
+<para>The function <function>mkDerivation</function> in the standard
 environment is a wrapper around <function>derivation</function> that
 adds a default value for <varname>system</varname> and always uses
 Bash as the builder, to which the supplied builder is passed as a
-command-line argument.  See <xref linkend="sec-standard-environment"/>.)</para>
+command-line argument.  See <xref linkend="sec-standard-environment"/>.</para>
 
 <para>The builder is executed as follows:
 
@@ -2982,17 +3053,19 @@ command-line argument.  See <xref linkend="sec-standard-environment"/>.)</para>
     top-level Nix store directory (typically,
     <filename>/nix/store</filename>).</para></listitem>
 
-    <listitem><para><envar>out</envar> is set to point to the output
-    path of the derivation, which is a subdirectory of the Nix store.
-    The output path is a concatenation of the cryptographic hash of
-    all build inputs, and the <varname>name</varname>
-    attribute.</para></listitem>
-    
+    <listitem><para>For each output declared in
+    <varname>outputs</varname>, the corresponding environment variable
+    is set to point to the intended path in the Nix store for that
+    output.  Each output path is a concatenation of the cryptographic
+    hash of all build inputs, the <varname>name</varname> attribute
+    and the output name.  (The output name is omitted if it&#x2019;s
+    <literal>out</literal>.)</para></listitem>
+
   </itemizedlist>
 
   </para></listitem>
 
-  <listitem><para>If the output path already exists, it is removed.
+  <listitem><para>If an output path already exists, it is removed.
   Also, locks are acquired to prevent multiple Nix instances from
   performing the same build at the same time.</para></listitem>
 
@@ -3006,14 +3079,11 @@ command-line argument.  See <xref linkend="sec-standard-environment"/>.)</para>
   <listitem><para>The temporary directory is removed (unless the
   <option>-K</option> option was specified).</para></listitem>
 
-  <listitem><para>If the build was successful, Nix scans the output
-  for references to the paths of the inputs.  These so-called
-  <emphasis>retained dependencies</emphasis> could be used when the
-  output of the derivation is used (e.g., when it's executed or used
-  as input to another derivation), so if we deploy the derivation, we
-  should copy the retained dependencies as well.  The scan is
-  performed by looking for the hash parts of file names of the
-  inputs.</para></listitem>
+  <listitem><para>If the build was successful, Nix scans each output
+  path for references to input paths by looking for the hash parts of
+  the input paths.  Since these are potential runtime dependencies,
+  Nix registers them as dependencies of the output
+  paths.</para></listitem>
 
   <listitem><para>After the build, Nix sets the last-modified
   timestamp on all files in the build result to 1 (00:00:01 1/1/1970
@@ -3039,7 +3109,7 @@ attributes.</para>
 <variablelist>
 
   <varlistentry><term><varname>allowedReferences</varname></term>
-  
+
     <listitem><para>The optional attribute
     <varname>allowedReferences</varname> specifies a list of legal
     references (dependencies) of the output of the builder.  For
@@ -3057,7 +3127,7 @@ allowedReferences = [];
 
   </varlistentry>
 
-  
+
   <varlistentry><term><varname>exportReferencesGraph</varname></term>
 
     <listitem><para>This attribute allows builders access to the
@@ -3168,7 +3238,7 @@ stdenv.mkDerivation {
   outputHashMode = "flat";
   outputHashAlgo = "md5";
   outputHash = md5;
-  
+
   inherit url;
 }
 </programlisting>
@@ -3197,7 +3267,7 @@ stdenv.mkDerivation {
         <para>This is the default.</para></listitem>
 
       </varlistentry>
-    
+
       <varlistentry><term><literal>"recursive"</literal></term>
 
         <listitem><para>The hash is computed over the NAR archive dump
@@ -3216,10 +3286,10 @@ stdenv.mkDerivation {
     notation.  (See the <link linkend="sec-nix-hash"><command>nix-hash</command> command</link>
     for information about converting to and from base-32
     notation.)</para></listitem>
-    
+
   </varlistentry>
 
-  
+
   <varlistentry><term><varname>impureEnvVars</varname></term>
 
     <listitem><para>This attribute allows you to specify a list of
@@ -3245,7 +3315,7 @@ impureEnvVars = [ "http_proxy" "https_proxy" <replaceable>...</replaceable> ];
 
   </varlistentry>
 
-  
+
   <varlistentry><term><varname>preferLocalBuild</varname></term>
 
     <listitem><para>If this attribute is set to
@@ -3285,7 +3355,7 @@ is also available as <function>builtins.derivation</function>.</para>
 
 <variablelist>
 
-  
+
   <varlistentry><term><function>abort</function> <replaceable>s</replaceable></term>
 
     <listitem><para>Abort Nix expression evaluation, print error
@@ -3293,7 +3363,7 @@ is also available as <function>builtins.derivation</function>.</para>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.add</function>
   <replaceable>e1</replaceable> <replaceable>e2</replaceable></term>
 
@@ -3303,7 +3373,7 @@ is also available as <function>builtins.derivation</function>.</para>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.attrNames</function>
   <replaceable>attrs</replaceable></term>
 
@@ -3321,7 +3391,7 @@ attrValues = attrs: map (name: builtins.getAttr name attrs) (builtins.attrNames 
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>baseNameOf</function> <replaceable>s</replaceable></term>
 
     <listitem><para>Return the <emphasis>base name</emphasis> of the
@@ -3331,7 +3401,7 @@ attrValues = attrs: map (name: builtins.getAttr name attrs) (builtins.attrNames 
 
   </varlistentry>
 
-  
+
   <varlistentry><term><varname>builtins</varname></term>
 
     <listitem><para>The attribute set <varname>builtins</varname>
@@ -3348,7 +3418,7 @@ if builtins ? getEnv then builtins.getEnv "PATH" else ""</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.compareVersions</function>
   <replaceable>s1</replaceable> <replaceable>s2</replaceable></term>
 
@@ -3364,7 +3434,16 @@ if builtins ? getEnv then builtins.getEnv "PATH" else ""</programlisting>
 
   </varlistentry>
 
-  
+
+  <varlistentry><term><function>builtins.concatLists</function>
+  <replaceable>lists</replaceable></term>
+
+    <listitem><para>Concatenate a list of lists into a single
+    list.</para></listitem>
+
+  </varlistentry>
+
+
   <varlistentry xml:id="builtin-currentSystem"><term><varname>builtins.currentSystem</varname></term>
 
     <listitem><para>The built-in value <varname>currentSystem</varname>
@@ -3388,7 +3467,7 @@ if builtins ? getEnv then builtins.getEnv "PATH" else ""</programlisting>
   </varlistentry>
   -->
 
-  
+
   <!--
   <varlistentry><term><function>dependencyClosure</function></term>
 
@@ -3397,7 +3476,7 @@ if builtins ? getEnv then builtins.getEnv "PATH" else ""</programlisting>
   </varlistentry>
   -->
 
-  
+
   <varlistentry><term><function>derivation</function>
   <replaceable>attrs</replaceable></term>
 
@@ -3416,7 +3495,7 @@ if builtins ? getEnv then builtins.getEnv "PATH" else ""</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.div</function>
   <replaceable>e1</replaceable> <replaceable>e2</replaceable></term>
 
@@ -3426,7 +3505,40 @@ if builtins ? getEnv then builtins.getEnv "PATH" else ""</programlisting>
 
   </varlistentry>
 
-  
+
+  <varlistentry><term><function>builtins.elem</function>
+  <replaceable>x</replaceable> <replaceable>xs</replaceable></term>
+
+    <listitem><para>Return <literal>true</literal> if a value equal to
+    <replaceable>x</replaceable> occurs in the list
+    <replaceable>xs</replaceable>, and <literal>false</literal>
+    otherwise.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><function>builtins.elemAt</function>
+  <replaceable>xs</replaceable> <replaceable>n</replaceable></term>
+
+    <listitem><para>Return element <replaceable>n</replaceable> from
+    the list <replaceable>xs</replaceable>.  Elements are counted
+    starting from 0.  A fatal error occurs in the index is out of
+    bounds.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><function>builtins.filter</function>
+  <replaceable>f</replaceable> <replaceable>xs</replaceable></term>
+
+    <listitem><para>Return a list consisting of the elements of
+    <replaceable>xs</replaceable> for which the function
+    <replaceable>f</replaceable> returns
+    <literal>true</literal>.</para></listitem>
+
+  </varlistentry>
+
+
   <varlistentry><term><function>builtins.filterSource</function>
   <replaceable>e1</replaceable> <replaceable>e2</replaceable></term>
 
@@ -3478,7 +3590,7 @@ stdenv.mkDerivation {
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.getAttr</function>
   <replaceable>s</replaceable> <replaceable>attrs</replaceable></term>
 
@@ -3491,7 +3603,7 @@ stdenv.mkDerivation {
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.getEnv</function>
   <replaceable>s</replaceable></term>
 
@@ -3509,7 +3621,7 @@ stdenv.mkDerivation {
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.hasAttr</function>
   <replaceable>s</replaceable> <replaceable>attrs</replaceable></term>
 
@@ -3523,7 +3635,7 @@ stdenv.mkDerivation {
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.head</function>
   <replaceable>list</replaceable></term>
 
@@ -3534,13 +3646,15 @@ stdenv.mkDerivation {
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>import</function>
   <replaceable>path</replaceable></term>
 
     <listitem><para>Load, parse and return the Nix expression in the
-    file <replaceable>path</replaceable>.  Evaluation aborts if the
-    file doesn&#x2019;t exist or contains an incorrect Nix
+    file <replaceable>path</replaceable>.  If <replaceable>path
+    </replaceable> is a directory, the file <filename>default.nix
+    </filename> in that directory is loaded.  Evaluation aborts if
+    the file doesn&#x2019;t exist or contains an incorrect Nix
     expression.  <function>import</function> implements Nix&#x2019;s module
     system: you can put any Nix expression (such as an attribute set
     or a function) in a separate file, and use it from Nix expressions
@@ -3552,7 +3666,7 @@ stdenv.mkDerivation {
     built-in).  Therefore, it cannot refer to variables that are in
     scope at the call site.  For instance, if you have a calling
     expression
-    
+
 <programlisting>
 rec {
   x = 123;
@@ -3587,7 +3701,7 @@ x: x + 456</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.intersectAttrs</function>
   <replaceable>e1</replaceable> <replaceable>e2</replaceable></term>
 
@@ -3596,8 +3710,8 @@ x: x + 456</programlisting>
     exist in the set <replaceable>e1</replaceable>.</para></listitem>
 
   </varlistentry>
-        
-    
+
+
   <varlistentry><term><function>builtins.isAttrs</function>
   <replaceable>e</replaceable></term>
 
@@ -3607,7 +3721,7 @@ x: x + 456</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.isList</function>
   <replaceable>e</replaceable></term>
 
@@ -3617,7 +3731,7 @@ x: x + 456</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.isFunction</function>
   <replaceable>e</replaceable></term>
 
@@ -3627,7 +3741,7 @@ x: x + 456</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.isString</function>
   <replaceable>e</replaceable></term>
 
@@ -3637,7 +3751,7 @@ x: x + 456</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.isInt</function>
   <replaceable>e</replaceable></term>
 
@@ -3647,7 +3761,7 @@ x: x + 456</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.isBool</function>
   <replaceable>e</replaceable></term>
 
@@ -3657,7 +3771,7 @@ x: x + 456</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>isNull</function>
   <replaceable>e</replaceable></term>
 
@@ -3667,12 +3781,12 @@ x: x + 456</programlisting>
 
     <warning><para>This function is <emphasis>deprecated</emphasis>;
     just write <literal>e == null</literal> instead.</para></warning>
-    
+
     </listitem>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.length</function>
   <replaceable>e</replaceable></term>
 
@@ -3681,7 +3795,7 @@ x: x + 456</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.lessThan</function>
   <replaceable>e1</replaceable> <replaceable>e2</replaceable></term>
 
@@ -3694,7 +3808,7 @@ x: x + 456</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.listToAttrs</function>
   <replaceable>e</replaceable></term>
 
@@ -3721,7 +3835,7 @@ builtins.listToAttrs
     </para></listitem>
 
   </varlistentry>
-  
+
   <varlistentry><term><function>map</function>
   <replaceable>f</replaceable> <replaceable>list</replaceable></term>
 
@@ -3734,10 +3848,10 @@ map (x: "foo" + x) [ "bar" "bla" "abc" ]</programlisting>
 
     evaluates to <literal>[ "foobar" "foobla" "fooabc"
     ]</literal>.</para></listitem>
-    
+
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.mul</function>
   <replaceable>e1</replaceable> <replaceable>e2</replaceable></term>
 
@@ -3747,7 +3861,7 @@ map (x: "foo" + x) [ "bar" "bla" "abc" ]</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.parseDrvName</function>
   <replaceable>s</replaceable></term>
 
@@ -3762,7 +3876,7 @@ map (x: "foo" + x) [ "bar" "bla" "abc" ]</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.pathExists</function>
   <replaceable>path</replaceable></term>
 
@@ -3795,7 +3909,7 @@ in config.someSetting</programlisting>
   </varlistentry>
   -->
 
-  
+
   <varlistentry><term><function>builtins.readFile</function>
   <replaceable>path</replaceable></term>
 
@@ -3803,8 +3917,8 @@ in config.someSetting</programlisting>
     <replaceable>path</replaceable> as a string.</para></listitem>
 
   </varlistentry>
-  
-  
+
+
   <varlistentry><term><function>removeAttrs</function>
   <replaceable>attrs</replaceable> <replaceable>list</replaceable></term>
 
@@ -3820,7 +3934,7 @@ removeAttrs { x = 1; y = 2; z = 3; } [ "a" "x" "z" ]</screen>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.stringLength</function>
   <replaceable>e</replaceable></term>
 
@@ -3830,7 +3944,7 @@ removeAttrs { x = 1; y = 2; z = 3; } [ "a" "x" "z" ]</screen>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.sub</function>
   <replaceable>e1</replaceable> <replaceable>e2</replaceable></term>
 
@@ -3840,7 +3954,7 @@ removeAttrs { x = 1; y = 2; z = 3; } [ "a" "x" "z" ]</screen>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.substring</function>
   <replaceable>start</replaceable> <replaceable>len</replaceable>
   <replaceable>s</replaceable></term>
@@ -3858,7 +3972,7 @@ removeAttrs { x = 1; y = 2; z = 3; } [ "a" "x" "z" ]</screen>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.tail</function>
   <replaceable>list</replaceable></term>
 
@@ -3868,7 +3982,7 @@ removeAttrs { x = 1; y = 2; z = 3; } [ "a" "x" "z" ]</screen>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>throw</function>
   <replaceable>s</replaceable></term>
 
@@ -3882,7 +3996,7 @@ removeAttrs { x = 1; y = 2; z = 3; } [ "a" "x" "z" ]</screen>
 
   </varlistentry>
 
-  
+
   <varlistentry xml:id="builtin-toFile"><term><function>builtins.toFile</function>
   <replaceable>name</replaceable> <replaceable>s</replaceable></term>
 
@@ -3898,7 +4012,7 @@ removeAttrs { x = 1; y = 2; z = 3; } [ "a" "x" "z" ]</screen>
 
 stdenv.mkDerivation {
   name = "hello-2.1.1";
-  
+
   builder = builtins.toFile "builder.sh" "
     source $stdenv/setup
 
@@ -3917,7 +4031,7 @@ stdenv.mkDerivation {
   };
   inherit perl;
 }</programlisting>
-  
+
     </para>
 
     <para>It is even possible for one file to refer to another, e.g.,
@@ -3955,7 +4069,7 @@ in foo</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.toPath</function> <replaceable>s</replaceable></term>
 
     <listitem><para>Convert the string value
@@ -3968,7 +4082,7 @@ in foo</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>toString</function> <replaceable>e</replaceable></term>
 
     <listitem><para>Convert the expression
@@ -3980,7 +4094,7 @@ in foo</programlisting>
 
   </varlistentry>
 
-  
+
   <varlistentry xml:id="builtin-toXML"><term><function>builtins.toXML</function> <replaceable>e</replaceable></term>
 
     <listitem><para>Return a string containing an XML representation
@@ -4020,7 +4134,7 @@ in foo</programlisting>
 
     <example xml:id="ex-toxml"><title>Passing information to a builder
     using <function>toXML</function></title>
-    
+
 <programlisting><![CDATA[
 { stdenv, fetchurl, libxslt, jira, uberwiki }:
 
@@ -4028,7 +4142,7 @@ stdenv.mkDerivation (rec {
   name = "web-server";
 
   buildInputs = [ libxslt ];
-  
+
   builder = builtins.toFile "builder.sh" "
     source $stdenv/setup
     mkdir $out
@@ -4061,7 +4175,7 @@ stdenv.mkDerivation (rec {
 
     <example xml:id="ex-toxml-result"><title>XML representation produced by
     <function>toXML</function></title>
-    
+
 <programlisting><![CDATA[<?xml version='1.0' encoding='utf-8'?>
 <expr>
   <list>
@@ -4090,7 +4204,7 @@ stdenv.mkDerivation (rec {
 
   </varlistentry>
 
-  
+
   <varlistentry><term><function>builtins.trace</function>
   <replaceable>e1</replaceable> <replaceable>e2</replaceable></term>
 
@@ -4101,7 +4215,7 @@ stdenv.mkDerivation (rec {
 
   </varlistentry>
 
-  
+
 </variablelist>
 
 
@@ -4665,7 +4779,7 @@ look at the actual remote load.</para>
   
   <listitem><para>Causes Nix to print out a stack trace in case of Nix
   expression evaluation errors.</para></listitem>
-  
+
 </varlistentry>
 
 
@@ -4676,6 +4790,27 @@ look at the actual remote load.</para>
   added through <option>-I</option> take precedence over
   <envar>NIX_PATH</envar>.</para></listitem>
   
+</varlistentry>
+
+
+<varlistentry><term><option>--option</option> <replaceable>name</replaceable> <replaceable>value</replaceable></term>
+  
+  <listitem><para>Set the Nix configuration option
+  <replaceable>name</replaceable> to <replaceable>value</replaceable>.
+  This overrides settings in the Nix configuration file (see
+  <citerefentry><refentrytitle>nix.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>).</para></listitem>
+  
+</varlistentry>
+
+
+<varlistentry><term><option>--repair</option></term>
+
+  <listitem><para>Fix corrupted or missing store paths by
+  redownloading or rebuilding them.  Note that this is slow because it
+  requires computing a cryptographic hash of the contents of every
+  path in the closure of the build.  Also note the warning under
+  <command>nix-store --repair-path</command>.</para></listitem>
+
 </varlistentry>
 
 
@@ -4982,9 +5117,9 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
   multiple remote filesystems in
   <literal>/var/run/nix/remote-stores</literal>.</para>
 
-  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-worker">Nix daemon</link>, the only setting for
+  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-daemon">Nix daemon</link>, the only setting for
   this variable that matters is the one that the
-  <command>nix-worker</command> process uses.  So if you want to
+  <command>nix-daemon</command> process uses.  So if you want to
   change it, you have to restart the daemon.</para></listitem>
 
 </varlistentry>
@@ -5005,313 +5140,6 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
 
 
 </section>
-    <section xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="sec-conf-file">
-
-<title>Nix configuration file</title>
-
-
-<para>A number of persistent settings of Nix are stored in the file
-<filename><replaceable>sysconfdir</replaceable>/nix/nix.conf</filename>.
-This file is a list of <literal><replaceable>name</replaceable> =
-<replaceable>value</replaceable></literal> pairs, one per line.
-Comments start with a <literal>#</literal> character.  An example
-configuration file is shown in <xref linkend="ex-nix-conf"/>.</para>
-
-<example xml:id="ex-nix-conf"><title>Nix configuration file</title>
-
-<programlisting>
-gc-keep-outputs = true       # Nice for developers
-gc-keep-derivations = true   # Idem
-env-keep-derivations = false
-</programlisting>
-</example>
-
-<para>The following variables are currently available: 
-
-<variablelist>
-
-  
-  <varlistentry xml:id="conf-gc-keep-outputs"><term><literal>gc-keep-outputs</literal></term>
-
-    <listitem><para>If <literal>true</literal>, the garbage collector
-    will keep the outputs of non-garbage derivations.  If
-    <literal>false</literal> (default), outputs will be deleted unless
-    they are GC roots themselves (or reachable from other roots).</para>
- 
-    <para>In general, outputs must be registered as roots separately.
-    However, even if the output of a derivation is registered as a
-    root, the collector will still delete store paths that are used
-    only at build time (e.g., the C compiler, or source tarballs
-    downloaded from the network).  To prevent it from doing so, set
-    this option to <literal>true</literal>.</para></listitem>
-
-  </varlistentry>
-  
-
-  <varlistentry xml:id="conf-gc-keep-derivations"><term><literal>gc-keep-derivations</literal></term>
-
-    <listitem><para>If <literal>true</literal> (default), the garbage
-    collector will keep the derivations from which non-garbage store
-    paths were built.  If <literal>false</literal>, they will be
-    deleted unless explicitly registered as a root (or reachable from
-    other roots).</para>
-
-    <para>Keeping derivation around is useful for querying and
-    traceability (e.g., it allows you to ask with what dependencies or
-    options a store path was built), so by default this option is on.
-    Turn it off to safe a bit of disk space (or a lot if
-    <literal>gc-keep-outputs</literal> is also turned on).</para></listitem>
-
-  </varlistentry>
-
-  
-  <varlistentry><term><literal>env-keep-derivations</literal></term>
-
-    <listitem><para>If <literal>false</literal> (default), derivations
-    are not stored in Nix user environments.  That is, the derivation
-    any build-time-only dependencies may be garbage-collected.</para>
-
-    <para>If <literal>true</literal>, when you add a Nix derivation to
-    a user environment, the path of the derivation is stored in the
-    user environment.  Thus, the derivation will not be
-    garbage-collected until the user environment generation is deleted
-    (<command>nix-env --delete-generations</command>).  To prevent
-    build-time-only dependencies from being collected, you should also
-    turn on <literal>gc-keep-outputs</literal>.</para>
-
-    <para>The difference between this option and
-    <literal>gc-keep-derivations</literal> is that this one is
-    &#x201C;sticky&#x201D;: it applies to any user environment created while this
-    option was enabled, while <literal>gc-keep-derivations</literal>
-    only applies at the moment the garbage collector is
-    run.</para></listitem>
-
-  </varlistentry>
-
-  
-  <varlistentry xml:id="conf-build-max-jobs"><term><literal>build-max-jobs</literal></term>
-
-    <listitem><para>This option defines the maximum number of jobs
-    that Nix will try to build in parallel.  The default is
-    <literal>1</literal>.  You should generally set it to the number
-    of CPUs in your system (e.g., <literal>2</literal> on a Athlon 64
-    X2).  It can be overriden using the <option linkend="opt-max-jobs">--max-jobs</option> (<option>-j</option>)
-    command line switch.</para></listitem>
-
-  </varlistentry>
-
-
-  <varlistentry xml:id="conf-build-cores"><term><literal>build-cores</literal></term>
-
-    <listitem><para>Sets the value of the
-    <envar>NIX_BUILD_CORES</envar> environment variable in the
-    invocation of builders.  Builders can use this variable at their
-    discretion to control the maximum amount of parallelism.  For
-    instance, in Nixpkgs, if the derivation attribute
-    <varname>enableParallelBuilding</varname> is set to
-    <literal>true</literal>, the builder passes the
-    <option>-j<replaceable>N</replaceable></option> flag to GNU Make.
-    It can be overriden using the <option linkend="opt-cores">--cores</option> command line switch and
-    defaults to <literal>1</literal>.  The value <literal>0</literal>
-    means that the builder should use all available CPU cores in the
-    system.</para></listitem>
-
-  </varlistentry>
-
-
-  <varlistentry xml:id="conf-build-max-silent-time"><term><literal>build-max-silent-time</literal></term>
-
-    <listitem>
-
-      <para>This option defines the maximum number of seconds that a
-      builder can go without producing any data on standard output or
-      standard error.  This is useful (for instance in a automated
-      build system) to catch builds that are stuck in an infinite
-      loop, or to catch remote builds that are hanging due to network
-      problems.  It can be overriden using the <option linkend="opt-max-silent-time">--max-silent-time</option> command
-      line switch.</para>
-
-      <para>The value <literal>0</literal> means that there is no
-      timeout.  This is also the default.</para>
-
-    </listitem>
-
-  </varlistentry>
-
-  <varlistentry xml:id="conf-build-timeout"><term><literal>build-timeout</literal></term>
-
-    <listitem>
-
-      <para>This option defines the maximum number of seconds that a
-      builder can run.  This is useful (for instance in a automated
-      build system) to catch builds that are stuck in an infinite loop
-      but keep writing to their standard output or standard error.  It
-      can be overriden using the <option linkend="opt-timeout">--timeout</option> command line
-      switch.</para>
-
-      <para>The value <literal>0</literal> means that there is no
-      timeout.  This is also the default.</para>
-
-    </listitem>
-
-  </varlistentry>
-
-
-  <varlistentry xml:id="conf-build-users-group"><term><literal>build-users-group</literal></term>
-
-    <listitem><para>This options specifies the Unix group containing
-    the Nix build user accounts.  In multi-user Nix installations,
-    builds should not be performed by the Nix account since that would
-    allow users to arbitrarily modify the Nix store and database by
-    supplying specially crafted builders; and they cannot be performed
-    by the calling user since that would allow him/her to influence
-    the build result.</para>
-
-    <para>Therefore, if this option is non-empty and specifies a valid
-    group, builds will be performed under the user accounts that are a
-    member of the group specified here (as listed in
-    <filename>/etc/group</filename>).  Those user accounts should not
-    be used for any other purpose!</para>
-
-    <para>Nix will never run two builds under the same user account at
-    the same time.  This is to prevent an obvious security hole: a
-    malicious user writing a Nix expression that modifies the build
-    result of a legitimate Nix expression being built by another user.
-    Therefore it is good to have as many Nix build user accounts as
-    you can spare.  (Remember: uids are cheap.)</para>
-
-    <para>The build users should have permission to create files in
-    the Nix store, but not delete them.  Therefore,
-    <filename>/nix/store</filename> should be owned by the Nix
-    account, its group should be the group specified here, and its
-    mode should be <literal>1775</literal>.</para>
-
-    <para>If the build users group is empty, builds will be performed
-    under the uid of the Nix process (that is, the uid of the caller
-    if <envar>NIX_REMOTE</envar> is empty, the uid under which the Nix
-    daemon runs if <envar>NIX_REMOTE</envar> is
-    <literal>daemon</literal>, or the uid that owns the setuid
-    <command>nix-worker</command> program if <envar>NIX_REMOTE</envar>
-    is <literal>slave</literal>).  Obviously, this should not be used
-    in multi-user settings with untrusted users.</para>
-
-    </listitem>
-
-  </varlistentry>
-
-
-  <varlistentry><term><literal>build-use-chroot</literal></term>
-
-    <listitem><para>If set to <literal>true</literal>, builds will be
-    performed in a <emphasis>chroot environment</emphasis>, i.e., the
-    build will be isolated from the normal file system hierarchy and
-    will only see the Nix store, the temporary build directory, and
-    the directories configured with the <link linkend="conf-build-chroot-dirs"><literal>build-chroot-dirs</literal>
-    option</link> (such as <filename>/proc</filename> and
-    <filename>/dev</filename>).  This is useful to prevent undeclared
-    dependencies on files in directories such as
-    <filename>/usr/bin</filename>.</para>
-
-    <para>The use of a chroot requires that Nix is run as root (but
-    you can still use the <link linkend="conf-build-users-group">&#x201C;build users&#x201D; feature</link> to
-    perform builds under different users than root).  Currently,
-    chroot builds only work on Linux because Nix uses &#x201C;bind mounts&#x201D; to
-    make the Nix store and other directories available inside the
-    chroot.</para>
-
-    </listitem>
-
-  </varlistentry>
-
-  
-  <varlistentry><term><literal>build-use-substitutes</literal></term>
-
-    <listitem><para>If set to <literal>true</literal> (default), Nix
-    will use binary substitutes if available.  This option can be
-    disabled to force building from source.</para></listitem>
-
-  </varlistentry>
-
-    
-  <varlistentry xml:id="conf-build-chroot-dirs"><term><literal>build-chroot-dirs</literal></term>
-
-    <listitem><para>When builds are performed in a chroot environment,
-    Nix will mount (using <command>mount --bind</command> on Linux)
-    some directories from the normal file system hierarchy inside the
-    chroot.  These are the Nix store, the temporary build directory
-    (usually
-    <filename>/tmp/nix-<replaceable>pid</replaceable>-<replaceable>number</replaceable></filename>)
-    and the directories listed here.  The default is <literal>dev
-    /proc</literal>.  Files in <filename>/dev</filename> (such as
-    <filename>/dev/null</filename>) are needed by many builds, and
-    some files in <filename>/proc</filename> may also be needed
-    occasionally.</para>
-
-    <para>The value used on NixOS is
-    
-<programlisting>
-build-use-chroot = /dev /proc /bin</programlisting>
-
-    to make the <filename>/bin/sh</filename> symlink available (which
-    is still needed by many builders).</para>
-
-    </listitem>
-
-  </varlistentry>
-
-  
-  <varlistentry><term><literal>build-cache-failures</literal></term>
-
-    <listitem><para>If set to <literal>true</literal>, Nix will
-    &#x201C;cache&#x201D; build failures, meaning that it will remember (in its
-    database) that a derivation previously failed.  If you then try to
-    build the derivation again, Nix will immediately fail rather than
-    perform the build again.  Failures in fixed-output derivations
-    (such as <function>fetchurl</function> calls) are never cached.
-    The &#x201C;failed&#x201D; status of a derivation can be cleared using
-    <command>nix-store --clear-failed-paths</command>.  By default,
-    failure caching is disabled.</para></listitem>
-
-  </varlistentry>
-
-
-  <varlistentry><term><literal>system</literal></term>
-
-    <listitem><para>This option specifies the canonical Nix system
-    name of the current installation, such as
-    <literal>i686-linux</literal> or
-    <literal>powerpc-darwin</literal>.  Nix can only build derivations
-    whose <literal>system</literal> attribute equals the value
-    specified here.  In general, it never makes sense to modify this
-    value from its default, since you can use it to &#x2018;lie&#x2019; about the
-    platform you are building on (e.g., perform a Mac OS build on a
-    Linux machine; the result would obviously be wrong).  It only
-    makes sense if the Nix binaries can run on multiple platforms,
-    e.g., &#x2018;universal binaries&#x2019; that run on <literal>powerpc-darwin</literal> and
-    <literal>i686-darwin</literal>.</para>
-
-    <para>It defaults to the canonical Nix system name detected by
-    <filename>configure</filename> at build time.</para></listitem>
-
-  </varlistentry>
-
-
-  <varlistentry><term><literal>fsync-metadata</literal></term>
-
-    <listitem><para>If set to <literal>true</literal>, changes to the
-    Nix store metadata (in <filename>/nix/var/nix/db</filename>) are
-    synchronously flushed to disk.  This improves robustness in case
-    of system crashes, but reduces performance.  The default is
-    <literal>true</literal>.</para></listitem>
-
-  </varlistentry>
-    
-</variablelist>
-
-</para>
-
-
-</section>
     
     <section>
       <title>Main commands</title>
@@ -5321,7 +5149,7 @@ build-use-chroot = /dev /proc /bin</programlisting>
   <refentrytitle>nix-env</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -5350,6 +5178,10 @@ build-use-chroot = /dev /proc /bin</programlisting>
 </arg><arg xmlns="http://docbook.org/ns/docbook"><option>--keep-going</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>-k</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--keep-failed</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>-K</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--fallback</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--readonly-mode</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--log-type</option> <replaceable>type</replaceable></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--show-trace</option></arg><arg xmlns="http://docbook.org/ns/docbook">
   <option>-I</option>
   <replaceable>path</replaceable>
+</arg><arg xmlns="http://docbook.org/ns/docbook">
+  <option>--option</option>
+  <replaceable>name</replaceable>
+  <replaceable>value</replaceable>
 </arg><sbr xmlns="http://docbook.org/ns/docbook"/>
     <arg><option>--arg</option> <replaceable>name</replaceable> <replaceable>value</replaceable></arg>
     <arg><option>--argstr</option> <replaceable>name</replaceable> <replaceable>value</replaceable></arg>
@@ -5437,7 +5269,8 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
 
     <listitem><para>For the <option>--install</option>,
     <option>--upgrade</option>, <option>--uninstall</option>,
-    <option>--switch-generation</option> and
+    <option>--switch-generation</option>,
+    <option>--delete-generations</option> and
     <option>--rollback</option> operations, this flag will cause
     <command>nix-env</command> to print what
     <emphasis>would</emphasis> be done if this flag had not been
@@ -5740,7 +5573,7 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
   
   <listitem><para>Causes Nix to print out a stack trace in case of Nix
   expression evaluation errors.</para></listitem>
-  
+
 </varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>-I</option> <replaceable>path</replaceable></term>
   
   <listitem><para>Add a path to the Nix expression search path.  See
@@ -5748,6 +5581,21 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
   added through <option>-I</option> take precedence over
   <envar>NIX_PATH</envar>.</para></listitem>
   
+</varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>--option</option> <replaceable>name</replaceable> <replaceable>value</replaceable></term>
+  
+  <listitem><para>Set the Nix configuration option
+  <replaceable>name</replaceable> to <replaceable>value</replaceable>.
+  This overrides settings in the Nix configuration file (see
+  <citerefentry><refentrytitle>nix.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>).</para></listitem>
+  
+</varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>--repair</option></term>
+
+  <listitem><para>Fix corrupted or missing store paths by
+  redownloading or rebuilding them.  Note that this is slow because it
+  requires computing a cryptographic hash of the contents of every
+  path in the closure of the build.  Also note the warning under
+  <command>nix-store --repair-path</command>.</para></listitem>
+
 </varlistentry>
 </variablelist>
 
@@ -7140,9 +6988,9 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
   multiple remote filesystems in
   <literal>/var/run/nix/remote-stores</literal>.</para>
 
-  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-worker">Nix daemon</link>, the only setting for
+  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-daemon">Nix daemon</link>, the only setting for
   this variable that matters is the one that the
-  <command>nix-worker</command> process uses.  So if you want to
+  <command>nix-daemon</command> process uses.  So if you want to
   change it, you have to restart the daemon.</para></listitem>
 
 </varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><envar>GC_INITIAL_HEAP_SIZE</envar></term>
@@ -7166,7 +7014,7 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
   <refentrytitle>nix-instantiate</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -7195,6 +7043,10 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
 </arg><arg xmlns="http://docbook.org/ns/docbook"><option>--keep-going</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>-k</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--keep-failed</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>-K</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--fallback</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--readonly-mode</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--log-type</option> <replaceable>type</replaceable></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--show-trace</option></arg><arg xmlns="http://docbook.org/ns/docbook">
   <option>-I</option>
   <replaceable>path</replaceable>
+</arg><arg xmlns="http://docbook.org/ns/docbook">
+  <option>--option</option>
+  <replaceable>name</replaceable>
+  <replaceable>value</replaceable>
 </arg><sbr xmlns="http://docbook.org/ns/docbook"/>
     <arg><option>--arg</option> <replaceable>name</replaceable> <replaceable>value</replaceable></arg>
     <arg>
@@ -7595,7 +7447,7 @@ policies.</para>
   
   <listitem><para>Causes Nix to print out a stack trace in case of Nix
   expression evaluation errors.</para></listitem>
-  
+
 </varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>-I</option> <replaceable>path</replaceable></term>
   
   <listitem><para>Add a path to the Nix expression search path.  See
@@ -7603,6 +7455,21 @@ policies.</para>
   added through <option>-I</option> take precedence over
   <envar>NIX_PATH</envar>.</para></listitem>
   
+</varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>--option</option> <replaceable>name</replaceable> <replaceable>value</replaceable></term>
+  
+  <listitem><para>Set the Nix configuration option
+  <replaceable>name</replaceable> to <replaceable>value</replaceable>.
+  This overrides settings in the Nix configuration file (see
+  <citerefentry><refentrytitle>nix.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>).</para></listitem>
+  
+</varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>--repair</option></term>
+
+  <listitem><para>Fix corrupted or missing store paths by
+  redownloading or rebuilding them.  Note that this is slow because it
+  requires computing a cryptographic hash of the contents of every
+  path in the closure of the build.  Also note the warning under
+  <command>nix-store --repair-path</command>.</para></listitem>
+
 </varlistentry>
 </variablelist>
 
@@ -7933,9 +7800,9 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
   multiple remote filesystems in
   <literal>/var/run/nix/remote-stores</literal>.</para>
 
-  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-worker">Nix daemon</link>, the only setting for
+  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-daemon">Nix daemon</link>, the only setting for
   this variable that matters is the one that the
-  <command>nix-worker</command> process uses.  So if you want to
+  <command>nix-daemon</command> process uses.  So if you want to
   change it, you have to restart the daemon.</para></listitem>
 
 </varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><envar>GC_INITIAL_HEAP_SIZE</envar></term>
@@ -7959,7 +7826,7 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
   <refentrytitle>nix-store</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -7988,6 +7855,10 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
 </arg><arg xmlns="http://docbook.org/ns/docbook"><option>--keep-going</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>-k</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--keep-failed</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>-K</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--fallback</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--readonly-mode</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--log-type</option> <replaceable>type</replaceable></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--show-trace</option></arg><arg xmlns="http://docbook.org/ns/docbook">
   <option>-I</option>
   <replaceable>path</replaceable>
+</arg><arg xmlns="http://docbook.org/ns/docbook">
+  <option>--option</option>
+  <replaceable>name</replaceable>
+  <replaceable>value</replaceable>
 </arg><sbr xmlns="http://docbook.org/ns/docbook"/>
     <arg><option>--add-root</option> <replaceable>path</replaceable></arg>
     <arg><option>--indirect</option></arg>
@@ -8361,7 +8232,7 @@ lrwxrwxrwx    1 ... 2005-03-13 21:10 /home/eelco/bla/result -&gt; /nix/store/1r1
   
   <listitem><para>Causes Nix to print out a stack trace in case of Nix
   expression evaluation errors.</para></listitem>
-  
+
 </varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>-I</option> <replaceable>path</replaceable></term>
   
   <listitem><para>Add a path to the Nix expression search path.  See
@@ -8369,6 +8240,21 @@ lrwxrwxrwx    1 ... 2005-03-13 21:10 /home/eelco/bla/result -&gt; /nix/store/1r1
   added through <option>-I</option> take precedence over
   <envar>NIX_PATH</envar>.</para></listitem>
   
+</varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>--option</option> <replaceable>name</replaceable> <replaceable>value</replaceable></term>
+  
+  <listitem><para>Set the Nix configuration option
+  <replaceable>name</replaceable> to <replaceable>value</replaceable>.
+  This overrides settings in the Nix configuration file (see
+  <citerefentry><refentrytitle>nix.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>).</para></listitem>
+  
+</varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>--repair</option></term>
+
+  <listitem><para>Fix corrupted or missing store paths by
+  redownloading or rebuilding them.  Note that this is slow because it
+  requires computing a cryptographic hash of the contents of every
+  path in the closure of the build.  Also note the warning under
+  <command>nix-store --repair-path</command>.</para></listitem>
+
 </varlistentry>
 </variablelist>
 
@@ -8426,10 +8312,26 @@ the specified store paths.  Realisation is a somewhat overloaded term:
 output.  (For non-derivations argument, the argument itself is
 printed.)</para>
 
-<para>If the <option>--dry-run</option> option is used, then
-<command>nix-store</command> will print on standard error a
-description of what packages would be built or downloaded, and then
-quit.</para>
+<para>The following flags are available:</para>
+
+<variablelist>
+
+  <varlistentry><term><option>--dry-run</option></term>
+
+    <listitem><para>Print on standard error a description of what
+    packages would be built or downloaded, without actually performing
+    the operation.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><option>--ignore-unknown</option></term>
+
+    <listitem><para>If a non-derivation path does not have a
+    substitute, then silently ignore it.</para></listitem>
+
+  </varlistentry>
+
+</variablelist>
 
 </refsection>
             
@@ -9015,6 +8917,7 @@ $ nix-store --add ./foo.c
     <command>nix-store</command>
     <arg choice="plain"><option>--verify</option></arg>
     <arg><option>--check-contents</option></arg>
+    <arg><option>--repair</option></arg>
   </cmdsynopsis>
 </refsection>
 
@@ -9027,7 +8930,7 @@ automatically repaired.  Inconsistencies are generally the result of
 the Nix store or database being modified by non-Nix tools, or of bugs
 in Nix itself.</para>
 
-<para>There is one option:
+<para>This operation has the following options:
 
 <variablelist>
 
@@ -9039,6 +8942,16 @@ in Nix itself.</para>
     time.  Paths that have been modified are printed out.  For large
     stores, <option>--check-contents</option> is obviously quite
     slow.</para></listitem>
+    
+  </varlistentry>
+  
+  <varlistentry><term><option>--repair</option></term>
+  
+    <listitem><para>If any valid path is missing from the store, or
+    (if <option>--check-contents</option> is given) the contents of a
+    valid path has been modified, then try to repair the path by
+    redownloading it.  See <command>nix-store --repair-path</command>
+    for details.</para></listitem>
     
   </varlistentry>
   
@@ -9084,6 +8997,52 @@ $ nix-store --verify-path $(nix-store -qR $(which svn))
 </screen>
 
 </para>
+
+</refsection>
+            
+</refsection>
+
+
+<!--######################################################################-->
+
+<refsection><title>Operation <option>--repair-path</option></title>
+
+<refsection>
+  <title>Synopsis</title>
+  <cmdsynopsis>
+    <command>nix-store</command>
+    <arg choice="plain"><option>--repair-path</option></arg>
+    <arg choice="plain" rep="repeat"><replaceable>paths</replaceable></arg>
+  </cmdsynopsis>
+</refsection>
+
+<refsection><title>Description</title>
+            
+<para>The operation <option>--repair-path</option> attempts to
+&#x201C;repair&#x201D; the specified paths by redownloading them using the available
+substituters.  If no substitutes are available, then repair is not
+possible.</para>
+
+<warning><para>During repair, there is a very small time window during
+which the old path (if it exists) is moved out of the way and replaced
+with the new path.  If repair is interrupted in between, then the
+system may be left in a broken state (e.g., if the path contains a
+critical system component like the GNU C Library).</para></warning>
+
+</refsection>
+            
+<refsection><title>Example</title>
+
+<screen>
+$ nix-store --verify-path /nix/store/dj7a81wsm1ijwwpkks3725661h3263p5-glibc-2.13
+path `/nix/store/dj7a81wsm1ijwwpkks3725661h3263p5-glibc-2.13' was modified!
+  expected hash `2db57715ae90b7e31ff1f2ecb8c12ec1cc43da920efcbe3b22763f36a1861588',
+  got `481c5aa5483ebc97c20457bb8bca24deea56550d3985cda0027f67fe54b808e4'
+
+$ nix-store --repair-path /nix/store/dj7a81wsm1ijwwpkks3725661h3263p5-glibc-2.13
+fetching path `/nix/store/d7a81wsm1ijwwpkks3725661h3263p5-glibc-2.13'...
+&#x2026;
+</screen>
 
 </refsection>
             
@@ -9485,8 +9444,8 @@ paths.</para>
 <refsection><title>Example</title>
 
 <screen>
-$ nix-store --clear-failed-path /nix/store/000zi5dcla86l92jn1g997jb06sidm7x-perl-PerlMagick-6.59
-$ nix-store --clear-failed-path *
+$ nix-store --clear-failed-paths /nix/store/000zi5dcla86l92jn1g997jb06sidm7x-perl-PerlMagick-6.59
+$ nix-store --clear-failed-paths *
 </screen>
 
 </refsection>
@@ -9752,9 +9711,9 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
   multiple remote filesystems in
   <literal>/var/run/nix/remote-stores</literal>.</para>
 
-  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-worker">Nix daemon</link>, the only setting for
+  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-daemon">Nix daemon</link>, the only setting for
   this variable that matters is the one that the
-  <command>nix-worker</command> process uses.  So if you want to
+  <command>nix-daemon</command> process uses.  So if you want to
   change it, you have to restart the daemon.</para></listitem>
 
 </varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><envar>GC_INITIAL_HEAP_SIZE</envar></term>
@@ -9782,7 +9741,7 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
   <refentrytitle>nix-build</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -9811,6 +9770,10 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
 </arg><arg xmlns="http://docbook.org/ns/docbook"><option>--keep-going</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>-k</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--keep-failed</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>-K</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--fallback</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--readonly-mode</option></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--log-type</option> <replaceable>type</replaceable></arg><arg xmlns="http://docbook.org/ns/docbook"><option>--show-trace</option></arg><arg xmlns="http://docbook.org/ns/docbook">
   <option>-I</option>
   <replaceable>path</replaceable>
+</arg><arg xmlns="http://docbook.org/ns/docbook">
+  <option>--option</option>
+  <replaceable>name</replaceable>
+  <replaceable>value</replaceable>
 </arg><sbr xmlns="http://docbook.org/ns/docbook"/>
     <arg><option>--arg</option> <replaceable>name</replaceable> <replaceable>value</replaceable></arg>
     <arg><option>--argstr</option> <replaceable>name</replaceable> <replaceable>value</replaceable></arg>
@@ -9887,7 +9850,7 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
 <variablelist>
 
   <varlistentry><term><option>--drv-link</option> <replaceable>drvlink</replaceable></term>
-  
+
     <listitem><para>Add a symlink named
     <replaceable>drvlink</replaceable> to the store derivation
     produced by <command>nix-instantiate</command>.  The derivation is
@@ -9899,14 +9862,14 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
   </varlistentry>
 
   <varlistentry><term><option>--add-drv-link</option></term>
-  
+
     <listitem><para>Shorthand for <option>--drv-link</option>
     <filename>./derivation</filename>.</para></listitem>
-    
+
   </varlistentry>
 
   <varlistentry><term><option>--no-out-link</option></term>
-  
+
     <listitem><para>Do not create a symlink to the output path.  Note
     that as a result the output does not become a root of the garbage
     collector, and so might be deleted by <command>nix-store
@@ -9916,7 +9879,7 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
 
   <varlistentry xml:id="opt-out-link"><term><option>--out-link</option> /
   <option>-o</option> <replaceable>outlink</replaceable></term>
-  
+
     <listitem><para>Change the name of the symlink to the output path
     created from <filename>result</filename> to
     <replaceable>outlink</replaceable>.</para></listitem>
@@ -10204,7 +10167,7 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
   
   <listitem><para>Causes Nix to print out a stack trace in case of Nix
   expression evaluation errors.</para></listitem>
-  
+
 </varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>-I</option> <replaceable>path</replaceable></term>
   
   <listitem><para>Add a path to the Nix expression search path.  See
@@ -10212,6 +10175,21 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
   added through <option>-I</option> take precedence over
   <envar>NIX_PATH</envar>.</para></listitem>
   
+</varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>--option</option> <replaceable>name</replaceable> <replaceable>value</replaceable></term>
+  
+  <listitem><para>Set the Nix configuration option
+  <replaceable>name</replaceable> to <replaceable>value</replaceable>.
+  This overrides settings in the Nix configuration file (see
+  <citerefentry><refentrytitle>nix.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>).</para></listitem>
+  
+</varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><option>--repair</option></term>
+
+  <listitem><para>Fix corrupted or missing store paths by
+  redownloading or rebuilding them.  Note that this is slow because it
+  requires computing a cryptographic hash of the contents of every
+  path in the closure of the build.  Also note the warning under
+  <command>nix-store --repair-path</command>.</para></listitem>
+
 </varlistentry>
 </variablelist>
 
@@ -10220,7 +10198,7 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
 <variablelist>
 
   <varlistentry><term><option>--command</option> <replaceable>cmd</replaceable></term>
-  
+
     <listitem><para>In the environment of the derivation, executeq the
     command <replaceable>cmd</replaceable> instead of the default
     interactive shell.</para></listitem>
@@ -10228,7 +10206,7 @@ also <xref linkend="sec-common-options"/>.</phrase></para>
   </varlistentry>
 
   <varlistentry><term><option>--exclude</option> <replaceable>regexp</replaceable></term>
-  
+
     <listitem><para>Do not build any dependencies whose store path
     matches the regular expression <replaceable>regexp</replaceable>.
     This option may be specified multiple times.</para></listitem>
@@ -10267,6 +10245,25 @@ $ ./pan/gui/pan
 
 </para>
 
+<para>If a derivation has multiple outputs,
+<command>nix-build</command> will build the default (first) output.
+You can also build all outputs:
+<screen>
+$ nix-build '&lt;nixpkgs&gt;' -A openssl.all
+</screen>
+This will create a symlink for each output named
+<filename>result-<replaceable>outputname</replaceable></filename>.
+The suffix is omitted if the output name is <literal>out</literal>.
+So if <literal>openssl</literal> has outputs <literal>out</literal>,
+<literal>bin</literal> and <literal>man</literal>,
+<command>nix-build</command> will create symlinks
+<literal>result</literal>, <literal>result-bin</literal> and
+<literal>result-man</literal>.  It&#x2019;s also possible to build a specific
+output:
+<screen>
+$ nix-build '&lt;nixpkgs&gt;' -A openssl.man
+</screen>
+This will create a symlink <literal>result-man</literal>.</para>
 
 </refsection>
 
@@ -10527,9 +10524,9 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
   multiple remote filesystems in
   <literal>/var/run/nix/remote-stores</literal>.</para>
 
-  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-worker">Nix daemon</link>, the only setting for
+  <para>Note that if you&#x2019;re building through the <link linkend="sec-nix-daemon">Nix daemon</link>, the only setting for
   this variable that matters is the one that the
-  <command>nix-worker</command> process uses.  So if you want to
+  <command>nix-daemon</command> process uses.  So if you want to
   change it, you have to restart the daemon.</para></listitem>
 
 </varlistentry><varlistentry xmlns="http://docbook.org/ns/docbook"><term><envar>GC_INITIAL_HEAP_SIZE</envar></term>
@@ -10544,7 +10541,7 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
 </variablelist>
 
 </refsection>
-  
+
 
 </refentry>
       <refentry xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xml:id="sec-nix-channel">
@@ -10553,7 +10550,7 @@ $ mount -o bind /mnt/otherdisk/nix /nix</screen>
   <refentrytitle>nix-channel</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -10647,7 +10644,7 @@ respectively.</para>
 <para>To subscribe to the Nixpkgs channel and install the GNU Hello package:</para>
 
 <screen>
-$ nix-channel --add http://nixos.org/releases/nixpkgs/channels/nixpkgs-unstable
+$ nix-channel --add http://nixos.org/channels/nixpkgs-unstable
 $ nix-channel --update
 $ nix-env -iA nixpkgs.hello</screen>
 
@@ -10660,7 +10657,7 @@ $ nix-env -iA nixpkgs.hello</screen>
   <refentrytitle>nix-collect-garbage</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -10679,6 +10676,7 @@ $ nix-env -iA nixpkgs.hello</screen>
       <arg choice="plain"><option>--print-dead</option></arg>
       <arg choice="plain"><option>--delete</option></arg>
     </group>
+    <arg><option>--dry-run</option></arg>
   </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -10716,7 +10714,7 @@ $ nix-collect-garbage -d</screen>
   <refentrytitle>nix-copy-closure</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -10737,6 +10735,8 @@ $ nix-collect-garbage -d</screen>
     <arg><option>--xz</option></arg>
     <arg><option>--show-progress</option></arg>
     <arg><option>--include-outputs</option></arg>
+    <arg><option>--use-substitutes</option></arg>
+    <arg><option>-s</option></arg>
     <arg choice="plain">
       <replaceable>user@</replaceable><replaceable>machine</replaceable>
     </arg>
@@ -10774,7 +10774,7 @@ those paths.  If this bothers you, use
 <refsection><title>Options</title>
 
 <variablelist>
-  
+
   <varlistentry><term><option>--to</option></term>
 
     <listitem><para>Copy the closure of
@@ -10828,10 +10828,22 @@ those paths.  If this bothers you, use
   </varlistentry>
 
   <varlistentry><term><option>--include-outputs</option></term>
-  
-  <listitem><para>Also copy the outputs of store derivations included
-  in the closure.</para></listitem>
-  
+
+    <listitem><para>Also copy the outputs of store derivations
+    included in the closure.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><option>--use-substitutes</option> / <option>-s</option></term>
+
+    <listitem><para>Attempt to download missing paths on the target
+    machine using Nix&#x2019;s substitute mechanism.  Any paths that cannot
+    be substituted on the target are still copied normally from the
+    source.  This is useful, for instance, if the connection between
+    the source and target machine is slow, but the connection between
+    the target machine and <literal>nixos.org</literal> (the default
+    binary cache server) is fast.</para></listitem>
+
   </varlistentry>
 
 </variablelist>
@@ -10849,7 +10861,7 @@ those paths.  If this bothers you, use
     <command>ssh</command> on the command line.</para></listitem>
 
   </varlistentry>
-  
+
 </variablelist>
 
 </refsection>
@@ -10887,7 +10899,7 @@ $ nix-env -i /nix/store/0dj0503hjxy5mbwlafv1rsbdiyx1gkdy-subversion-1.4.4
   <refentrytitle>nix-hash</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -10970,8 +10982,9 @@ cryptographic hash as <literal>nix-store --dump
 
   <varlistentry><term><option>--type</option> <replaceable>hashAlgo</replaceable></term>
 
-    <listitem><para>Specify a cryptographic hash, which can be one of
-    <literal>md5</literal>, <literal>sha1</literal>, and
+    <listitem><para>Use the specified cryptographic hash algorithm,
+    which can be one of <literal>md5</literal>,
+    <literal>sha1</literal>, and
     <literal>sha256</literal>.</para></listitem>
 
   </varlistentry>
@@ -11046,7 +11059,7 @@ e4fd8ba5f7bbeaea5ace89fe10255536cd60dab6</screen>
   <refentrytitle>nix-install-package</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -11240,7 +11253,7 @@ and not part of the actual file.)
   <refentrytitle>nix-prefetch-url</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -11251,6 +11264,7 @@ and not part of the actual file.)
 <refsynopsisdiv>
   <cmdsynopsis>
     <command>nix-prefetch-url</command>
+    <arg><option>--type</option> <replaceable>hashAlgo</replaceable></arg>
     <arg choice="plain"><replaceable>url</replaceable></arg>
     <arg><replaceable>hash</replaceable></arg>
   </cmdsynopsis>
@@ -11278,11 +11292,6 @@ download it again when you build your Nix expression.  Since
 as <command>nix-prefetch-url</command>, the redundant download can be
 avoided.</para>
 
-<para>The environment variable <envar>NIX_HASH_ALGO</envar> specifies
-which hash algorithm to use.  It can be either <literal>md5</literal>,
-<literal>sha1</literal>, or <literal>sha256</literal>.  The default is
-<literal>sha256</literal>.</para>
-
 <para>If <replaceable>hash</replaceable> is specified, then a download
 is not performed if the Nix store already contains a file with the
 same hash and base name.  Otherwise, the file is downloaded, and an
@@ -11292,6 +11301,24 @@ specified hash.</para>
 <para>This command prints the hash on standard output.  Additionally,
 if the environment variable <envar>PRINT_PATH</envar> is set, the path
 of the downloaded file in the Nix store is also printed.</para>
+
+</refsection>
+
+
+<refsection><title>Options</title>
+
+<variablelist>
+  
+  <varlistentry><term><option>--type</option> <replaceable>hashAlgo</replaceable></term>
+
+    <listitem><para>Use the specified cryptographic hash algorithm,
+    which can be one of <literal>md5</literal>,
+    <literal>sha1</literal>, and
+    <literal>sha256</literal>.</para></listitem>
+
+  </varlistentry>
+
+</variablelist>
 
 </refsection>
 
@@ -11316,7 +11343,7 @@ $ PRINT_PATH=1 nix-prefetch-url ftp://ftp.nluug.nl/pub/gnu/make/make-3.80.tar.bz
   <refentrytitle>nix-pull</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
@@ -11363,29 +11390,24 @@ $ nix-pull http://nix.cs.uu.nl/dist/nix/nixpkgs-0.5pre753/MANIFEST</screen>
   <refentrytitle>nix-push</refentrytitle>
   <manvolnum>1</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
   <refname>nix-push</refname>
-  <refpurpose>push store paths onto a network cache</refpurpose>
+  <refpurpose>generate a binary cache</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
   <cmdsynopsis>
     <command>nix-push</command>
-    <group choice="req">
-      <arg choice="req">
-        <arg choice="plain"><replaceable>archivesPutURL</replaceable></arg>
-        <arg choice="plain"><replaceable>archivesGetURL</replaceable></arg>
-        <arg choice="plain"><replaceable>manifestPutURL</replaceable></arg>
-      </arg>
-      <arg choice="req">
-        <arg choice="plain"><option>--copy</option></arg>
-        <arg choice="plain"><replaceable>archivesDir</replaceable></arg>
-        <arg choice="plain"><replaceable>manifestFile</replaceable></arg>
-      </arg>
-    </group>
+    <arg choice="plain"><option>--dest</option> <replaceable>dest-dir</replaceable></arg>
+    <arg><option>--bzip2</option></arg>
+    <arg><option>--force</option></arg>
+    <arg><option>--link</option></arg>
+    <arg><option>--manifest</option></arg>
+    <arg><option>--manifest-path</option> <replaceable>filename</replaceable></arg>
+    <arg><option>--url-prefix</option> <replaceable>url</replaceable></arg>
     <arg choice="plain" rep="repeat"><replaceable>paths</replaceable></arg>
   </cmdsynopsis>
 </refsynopsisdiv>
@@ -11393,113 +11415,379 @@ $ nix-pull http://nix.cs.uu.nl/dist/nix/nixpkgs-0.5pre753/MANIFEST</screen>
 
 <refsection><title>Description</title>
 
-<para>The command <command>nix-push</command> builds a set of store
-paths (if necessary), and then packages and uploads all store paths in
-the resulting closures to a server.  A network cache thus populated
-can subsequently be used to speed up software deployment on other
-machines using the <command>nix-pull</command> command.</para>
+<para>The command <command>nix-push</command> produces a
+<emphasis>binary cache</emphasis>, a directory containing compressed
+Nix archives (NARs) plus some metadata of the closure of the specified
+store paths.  This directory can then be made available through a web
+server to other Nix installations, allowing them to skip building from
+source and instead download binaries from the cache
+automatically.</para>
 
 <para><command>nix-push</command> performs the following actions.
       
 <orderedlist>
 
   <listitem><para>Each path in <replaceable>paths</replaceable> is
-  realised (using <link linkend="rsec-nix-store-realise"><literal>nix-store
-  --realise</literal></link>).</para></listitem>
+  built (using <link linkend="rsec-nix-store-realise"><command>nix-store
+  --realise</command></link>).</para></listitem>
 
-  <listitem><para>All paths in the closure of the store expressions
-  stored in <replaceable>paths</replaceable> are determined (using
-  <literal>nix-store --query --requisites
-  --include-outputs</literal>).  It should be noted that since the
-  <option>--include-outputs</option> flag is used, you get a combined
-  source/binary distribution.</para></listitem>
+  <listitem><para>All paths in the closure of
+  <replaceable>paths</replaceable> are determined (using
+  <command>nix-store --query --requisites
+  --include-outputs</command>).  Note that since the
+  <option>--include-outputs</option> flag is used, if
+  <replaceable>paths</replaceable> includes a store derivation, you
+  get a combined source/binary distribution (e.g., source tarballs
+  will be included).</para></listitem>
 
   <listitem><para>All store paths determined in the previous step are
-  packaged and compressed into a <command>bzip</command>ped NAR
-  archive (extension <filename>.nar.bz2</filename>).</para></listitem>
+  packaged into a NAR (using <command>nix-store --dump</command>) and
+  compressed using <command>xz</command> or <command>bzip2</command>.
+  The resulting files have the extension <filename>.nar.xz</filename>
+  or <filename>.nar.bz2</filename>.  Also for each store path, Nix
+  generates a file with extension <filename>.narinfo</filename>
+  containing metadata such as the references, cryptographic hash and
+  size of each path.</para></listitem>
 
-  <listitem><para>A <emphasis>manifest</emphasis> is created that
-  contains information on the store paths, their eventual URLs in the
-  cache, and cryptographic hashes of the contents of the NAR
-  archives.</para></listitem>
+  <listitem><para>Optionally, a single <emphasis>manifest</emphasis>
+  file is created that contains the same metadata as the
+  <filename>.narinfo</filename> files.  This is for compatibility with
+  Nix versions prior to 1.2 (see <command>nix-pull</command> for
+  details).</para></listitem>
 
-  <listitem><para>Each store path is uploaded to the remote directory
-  specified by <replaceable>archivesPutURL</replaceable>.  HTTP PUT
-  requests are used to do this.  However, before a file
-  <varname>x</varname> is uploaded to
-  <literal><replaceable>archivesPutURL</replaceable>/</literal><varname>x</varname>,
-  <command>nix-push</command> first determines whether this upload is
-  unnecessary by issuing a HTTP HEAD request on
-  <literal><replaceable>archivesGetURL</replaceable>/</literal><varname>x</varname>.
-  This allows a cache to be shared between many partially overlapping
-  <command>nix-push</command> invocations.  (We use two URLs because
-  the upload URL typically refers to a CGI script, while the download
-  URL just refers to a file system directory on the
-  server.)</para></listitem>
+  <listitem><para>A file named <option>nix-cache-info</option> is
+  placed in the destination directory.  The existence of this file
+  marks the directory as a binary cache.</para></listitem>
 
-  <listitem><para>The manifest is uploaded using an HTTP PUT request
-  to <replaceable>manifestPutURL</replaceable>.  The corresponding
-  URL to download the manifest can then be used by
-  <command>nix-pull</command>.</para></listitem>
-        
 </orderedlist>
 
 </para>
 
-<!--
-<para>TODO:  <option>- -copy</option></para>
--->
-            
+</refsection>
+
+
+<refsection><title>Options</title>
+
+<variablelist>
+
+  <varlistentry><term><option>--dest</option> <replaceable>dest-dir</replaceable></term>
+
+    <listitem><para>Set the destination directory to
+    <replaceable>dir</replaceable>, which is created if it does not
+    exist.  This flag is required.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><option>--bzip2</option></term>
+
+    <listitem><para>Compress NARs using <command>bzip2</command>
+    instead of <command>xz -9</command>.  The latter compresses about
+    30% better on typical archives, decompresses about twice as fast,
+    but compresses a lot slower and is not supported by Nix prior to
+    version 1.2.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><option>--force</option></term>
+
+    <listitem><para>Overwrite <filename>.narinfo</filename> files if
+    they already exist.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><option>--link</option></term>
+
+    <listitem><para>By default, NARs are generated in the Nix store
+    and then copied to <replaceable>dest-dir</replaceable>.  If this
+    option is given, hard links are used instead.  This only works if
+    <replaceable>dest-dir</replaceable> is on the same filesystem as
+    the Nix store.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><option>--manifest</option></term>
+
+    <listitem><para>Force the generation of a manifest suitable for
+    use by <command>nix-pull</command>.  The manifest is stored as
+    <filename><replaceable>dest-dir</replaceable>/MANIFEST</filename>.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><option>--manifest-path</option> <replaceable>filename</replaceable></term>
+
+    <listitem><para>Like <option>--manifest</option>, but store the
+    manifest in <replaceable>filename</replaceable>.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><option>--url-prefix</option> <replaceable>url</replaceable></term>
+
+    <listitem><para>Manifests are expected to contain the absolute
+    URLs of NARs.  For generating these URLs, the prefix
+    <replaceable>url</replaceable> is used.  It defaults to
+    <uri>file://<replaceable>dest-dir</replaceable></uri>.</para></listitem>
+
+  </varlistentry>
+
+</variablelist>
+
 </refsection>
 
 
 <refsection><title>Examples</title>
 
-<para>To upload files there typically is some CGI script on the server
-side.  This script should be be protected with a password.  The
-following example uploads the store paths resulting from building the
-Nix expressions in <filename>foo.nix</filename>, passing appropriate
-authentication information:
-    
-<screen>
-$ nix-push \
-    http://foo@bar:server.domain/cgi-bin/upload.pl/cache \
-    http://server.domain/cache \
-    http://foo@bar:server.domain/cgi-bin/upload.pl/MANIFEST \
-    $(nix-instantiate foo.nix)</screen>
+<para>To add the closure of Thunderbird to a binary cache:
 
-This will push both sources and binaries (and any build-time
-dependencies used in the build, such as compilers).</para>
-
-<para>If we just want to push binaries, not sources and build-time
-dependencies, we can do:
-      
 <screen>
-$ nix-push <replaceable>urls</replaceable> $(nix-store -r $(nix-instantiate foo.nix))</screen>
-    
+$ nix-push --dest /tmp/cache $(nix-build -A thunderbird)
+</screen>
+
+Assuming that <filename>/tmp/cache</filename> is exported by a web
+server as <uri>http://example.org/cache</uri>, you can then use this
+cache on another machine to speed up the installation of Thunderbird:
+
+<screen>
+$ nix-build -A thunderbird --option binary-caches http://example.org/cache
+</screen>
+
+Alternatively, you could add <literal>binary-caches =
+http://example.org/cache</literal> to
+<filename>nix.conf</filename>.</para>
+
+<para>To also include build-time dependencies (such as source
+tarballs):
+
+<screen>
+$ nix-push --dest /tmp/cache $(nix-instantiate -A thunderbird)
+</screen>
+
 </para>
 
+<para>To generate a manifest suitable for <command>nix-pull</command>:
+
+<screen>
+$ nix-push --dest /tmp/cache $(nix-build -A thunderbird) --manifest
+</screen>
+
+On another machine you can then do:
+
+<screen>
+$ nix-pull http://example.org/cache
+</screen>
+
+to cause the binaries to be used by subsequent Nix operations.</para>
+
 </refsection>
-    
+
+
+<refsection><title>Binary cache format and operation</title>
+
+<para>A binary cache with URL <replaceable>url</replaceable> only
+denotes a valid binary cache if the file
+<uri><replaceable>url</replaceable>/nix-cache-info</uri> exists.  If
+this file does not exist (or cannot be downloaded), the cache is
+ignored.  If it does exist, it must be a text file containing cache
+properties.  Here&#x2019;s an example:
+
+<screen>
+StoreDir: /nix/store
+WantMassQuery: 1
+Priority: 10
+</screen>
+
+The properties that are currently supported are:
+
+<variablelist>
+  
+  <varlistentry><term><literal>StoreDir</literal></term>
+
+    <listitem><para>The path of the Nix store to which this binary
+    cache applies.  Binaries are not relocatable &#x2014; a binary built for
+    <filename>/nix/store</filename> won&#x2019;t generally work in
+    <filename>/home/alice/store</filename> &#x2014; so to prevent binaries
+    from being used in a wrong store, a binary cache is only used if
+    its <literal>StoreDir</literal> matches the local Nix
+    configuration.  The default is
+    <filename>/nix/store</filename>.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>WantMassQuery</literal></term>
+
+    <listitem><para>Query operations such as <command>nix-env
+    -qas</command> can cause thousands of cache queries, and thus
+    thousands of HTTP requests, to determine which packages are
+    available in binary form.  While these requests are small, not
+    every server may appreciate a potential onslaught of queries.  If
+    <literal>WantMassQuery</literal> is set to <literal>0</literal>
+    (default), &#x201C;mass queries&#x201D; such as <command>nix-env -qas</command>
+    will skip this cache.  Thus a package may appear not to have a
+    binary substitute.  However, the binary will still be used when
+    you actually install the package.  If
+    <literal>WantMassQuery</literal> is set to <literal>1</literal>,
+    mass queries will use this cache.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>Priority</literal></term>
+
+    <listitem><para>Each binary cache has a priority (defaulting to
+    50).  Binary caches are checked for binaries in order of ascending
+    priority; thus a higher number denotes a lower priority.  The
+    binary cache <uri>http://nixos.org/binary-cache</uri> has priority
+    40.</para></listitem>
+
+  </varlistentry>
+
+</variablelist>
+
+</para>
+
+<para>Every time Nix needs to build some store path
+<replaceable>p</replaceable>, it will check each configured binary
+cache to see if it has a NAR file for <replaceable>p</replaceable>,
+until it finds one.  If no cache has a NAR, Nix will fall back to
+building the path from source (if applicable).  To see if a cache with
+URL <replaceable>url</replaceable> has a binary for
+<replaceable>p</replaceable>, Nix fetches
+<replaceable>url/h</replaceable>, where <replaceable>h</replaceable>
+is the hash part of <replaceable>p</replaceable>.  Thus, if we have a
+cache <uri>http://nixos.org/binary-cache</uri> and we want to obtain
+the store path
+<screen>
+/nix/store/a8922c0h87iilxzzvwn2hmv8x210aqb9-glibc-2.7
+</screen>
+then Nix will attempt to fetch
+<screen>
+http://nixos.org/binary-cache/a8922c0h87iilxzzvwn2hmv8x210aqb9.narinfo
+</screen>
+(Commands such as <command>nix-env -qas</command> will issue an HTTP
+HEAD request, since it only needs to know if the
+<filename>.narinfo</filename> file exists.)  The
+<filename>.narinfo</filename> file is a simple text file that looks
+like this:
+
+<screen>
+StorePath: /nix/store/a8922c0h87iilxzzvwn2hmv8x210aqb9-glibc-2.7
+URL: nar/0zzjpdz46mdn74v09m053yczlz4am038g8r74iy8w43gx8801h70.nar.bz2
+Compression: bzip2
+FileHash: sha256:0zzjpdz46mdn74v09m053yczlz4am038g8r74iy8w43gx8801h70
+FileSize: 24473768
+NarHash: sha256:0s491y1h9hxj5ghiizlxk7ax6jwbha00zwn7lpyd5xg5bhf60vzg
+NarSize: 109521136
+References: 2ma2k0ys8knh4an48n28vigcmc2z8773-linux-headers-2.6.23.16 ...
+Deriver: 7akyyc87ka32xwmqza9dvyg5pwx3j212-glibc-2.7.drv
+</screen>
+
+The fields are as follows:
+
+<variablelist>
+  
+  <varlistentry><term><literal>StorePath</literal></term>
+
+    <listitem><para>The full store path, including the name part
+    (e.g., <literal>glibc-2.7</literal>).  It must match the
+    requested store path.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>URL</literal></term>
+
+    <listitem><para>The URL of the NAR, relative to the binary cache
+    URL.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>Compression</literal></term>
+
+    <listitem><para>The compression method; either
+    <literal>xz</literal> or
+    <literal>bzip2</literal>.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>FileHash</literal></term>
+
+    <listitem><para>The SHA-256 hash of the compressed
+    NAR.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>FileSize</literal></term>
+
+    <listitem><para>The size of the compressed NAR.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>NarHash</literal></term>
+
+    <listitem><para>The SHA-256 hash of the uncompressed NAR.  This is
+    equal to the hash of the store path as returned by
+    <command>nix-store -q --hash
+    <replaceable>p</replaceable></command>.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>NarSize</literal></term>
+
+    <listitem><para>The size of the uncompressed NAR.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>References</literal></term>
+
+    <listitem><para>The references of the store path, without the Nix
+    store prefix.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>Deriver</literal></term>
+
+    <listitem><para>The deriver of the store path, without the Nix
+    store prefix.  This field is optional.</para></listitem>
+
+  </varlistentry>
+
+  <varlistentry><term><literal>System</literal></term>
+
+    <listitem><para>The Nix platform type of this binary, if known.
+    This field is optional.</para></listitem>
+
+  </varlistentry>
+
+</variablelist>
+
+</para>
+
+<para>Thus, in our example, after recursively ensuring that the
+references exist (e.g.,
+<filename>/nix/store/2ma2k0ys8knh4an48n28vigcmc2z8773-linux-headers-2.6.23.16</filename>),
+Nix will fetch <screen>
+http://nixos.org/binary-cache/nar/0zzjpdz46mdn74v09m053yczlz4am038g8r74iy8w43gx8801h70.nar.bz2
+</screen> and decompress and unpack it to
+<filename>/nix/store/a8922c0h87iilxzzvwn2hmv8x210aqb9-glibc-2.7</filename>.</para>
+
+</refsection>
+
+
 </refentry>
-      <refentry xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xml:id="sec-nix-worker">
+      <refentry xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xml:id="sec-nix-daemon">
 
 <refmeta>
-  <refentrytitle>nix-worker</refentrytitle>
+  <refentrytitle>nix-daemon</refentrytitle>
   <manvolnum>8</manvolnum>
   <refmiscinfo class="source">Nix</refmiscinfo>
-  <refmiscinfo class="version">1.0</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
-  <refname>nix-worker</refname>
+  <refname>nix-daemon</refname>
   <refpurpose>Nix multi-user support daemon</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
   <cmdsynopsis>
-    <command>nix-worker</command>
-    <arg choice="plain"><option>--daemon</option></arg>
+    <command>nix-daemon</command>
   </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -11516,6 +11804,438 @@ of unprivileged users.</para>
 </refentry>
     </section>
 
+    <section>
+      <title>Files</title>
+      <refentry xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xml:id="sec-conf-file">
+
+<refmeta>
+  <refentrytitle>nix.conf</refentrytitle>
+  <manvolnum>5</manvolnum>
+  <refmiscinfo class="source">Nix</refmiscinfo>
+  <refmiscinfo class="version">1.2</refmiscinfo>
+</refmeta>
+
+<refnamediv>
+  <refname>nix.conf</refname>
+  <refpurpose>Nix configuration file</refpurpose>
+</refnamediv>
+
+<refsection><title>Description</title>
+
+<para>A number of persistent settings of Nix are stored in the file
+<filename><replaceable>sysconfdir</replaceable>/nix/nix.conf</filename>.
+This file is a list of <literal><replaceable>name</replaceable> =
+<replaceable>value</replaceable></literal> pairs, one per line.
+Comments start with a <literal>#</literal> character.  Here is an example
+configuration file:</para>
+
+<programlisting>
+gc-keep-outputs = true       # Nice for developers
+gc-keep-derivations = true   # Idem
+env-keep-derivations = false
+</programlisting>
+
+<para>You can override settings using the <option>--option</option>
+flag, e.g. <literal>--option gc-keep-outputs false</literal>.</para>
+
+<para>The following settings are currently available: 
+
+<variablelist>
+
+  
+  <varlistentry xml:id="conf-gc-keep-outputs"><term><literal>gc-keep-outputs</literal></term>
+
+    <listitem><para>If <literal>true</literal>, the garbage collector
+    will keep the outputs of non-garbage derivations.  If
+    <literal>false</literal> (default), outputs will be deleted unless
+    they are GC roots themselves (or reachable from other roots).</para>
+ 
+    <para>In general, outputs must be registered as roots separately.
+    However, even if the output of a derivation is registered as a
+    root, the collector will still delete store paths that are used
+    only at build time (e.g., the C compiler, or source tarballs
+    downloaded from the network).  To prevent it from doing so, set
+    this option to <literal>true</literal>.</para></listitem>
+
+  </varlistentry>
+  
+
+  <varlistentry xml:id="conf-gc-keep-derivations"><term><literal>gc-keep-derivations</literal></term>
+
+    <listitem><para>If <literal>true</literal> (default), the garbage
+    collector will keep the derivations from which non-garbage store
+    paths were built.  If <literal>false</literal>, they will be
+    deleted unless explicitly registered as a root (or reachable from
+    other roots).</para>
+
+    <para>Keeping derivation around is useful for querying and
+    traceability (e.g., it allows you to ask with what dependencies or
+    options a store path was built), so by default this option is on.
+    Turn it off to safe a bit of disk space (or a lot if
+    <literal>gc-keep-outputs</literal> is also turned on).</para></listitem>
+
+  </varlistentry>
+
+  
+  <varlistentry><term><literal>env-keep-derivations</literal></term>
+
+    <listitem><para>If <literal>false</literal> (default), derivations
+    are not stored in Nix user environments.  That is, the derivation
+    any build-time-only dependencies may be garbage-collected.</para>
+
+    <para>If <literal>true</literal>, when you add a Nix derivation to
+    a user environment, the path of the derivation is stored in the
+    user environment.  Thus, the derivation will not be
+    garbage-collected until the user environment generation is deleted
+    (<command>nix-env --delete-generations</command>).  To prevent
+    build-time-only dependencies from being collected, you should also
+    turn on <literal>gc-keep-outputs</literal>.</para>
+
+    <para>The difference between this option and
+    <literal>gc-keep-derivations</literal> is that this one is
+    &#x201C;sticky&#x201D;: it applies to any user environment created while this
+    option was enabled, while <literal>gc-keep-derivations</literal>
+    only applies at the moment the garbage collector is
+    run.</para></listitem>
+
+  </varlistentry>
+
+  
+  <varlistentry xml:id="conf-build-max-jobs"><term><literal>build-max-jobs</literal></term>
+
+    <listitem><para>This option defines the maximum number of jobs
+    that Nix will try to build in parallel.  The default is
+    <literal>1</literal>.  You should generally set it to the number
+    of CPUs in your system (e.g., <literal>2</literal> on a Athlon 64
+    X2).  It can be overriden using the <option linkend="opt-max-jobs">--max-jobs</option> (<option>-j</option>)
+    command line switch.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry xml:id="conf-build-cores"><term><literal>build-cores</literal></term>
+
+    <listitem><para>Sets the value of the
+    <envar>NIX_BUILD_CORES</envar> environment variable in the
+    invocation of builders.  Builders can use this variable at their
+    discretion to control the maximum amount of parallelism.  For
+    instance, in Nixpkgs, if the derivation attribute
+    <varname>enableParallelBuilding</varname> is set to
+    <literal>true</literal>, the builder passes the
+    <option>-j<replaceable>N</replaceable></option> flag to GNU Make.
+    It can be overriden using the <option linkend="opt-cores">--cores</option> command line switch and
+    defaults to <literal>1</literal>.  The value <literal>0</literal>
+    means that the builder should use all available CPU cores in the
+    system.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry xml:id="conf-build-max-silent-time"><term><literal>build-max-silent-time</literal></term>
+
+    <listitem>
+
+      <para>This option defines the maximum number of seconds that a
+      builder can go without producing any data on standard output or
+      standard error.  This is useful (for instance in a automated
+      build system) to catch builds that are stuck in an infinite
+      loop, or to catch remote builds that are hanging due to network
+      problems.  It can be overriden using the <option linkend="opt-max-silent-time">--max-silent-time</option> command
+      line switch.</para>
+
+      <para>The value <literal>0</literal> means that there is no
+      timeout.  This is also the default.</para>
+
+    </listitem>
+
+  </varlistentry>
+
+  <varlistentry xml:id="conf-build-timeout"><term><literal>build-timeout</literal></term>
+
+    <listitem>
+
+      <para>This option defines the maximum number of seconds that a
+      builder can run.  This is useful (for instance in a automated
+      build system) to catch builds that are stuck in an infinite loop
+      but keep writing to their standard output or standard error.  It
+      can be overriden using the <option linkend="opt-timeout">--timeout</option> command line
+      switch.</para>
+
+      <para>The value <literal>0</literal> means that there is no
+      timeout.  This is also the default.</para>
+
+    </listitem>
+
+  </varlistentry>
+
+
+  <varlistentry xml:id="conf-build-users-group"><term><literal>build-users-group</literal></term>
+
+    <listitem><para>This options specifies the Unix group containing
+    the Nix build user accounts.  In multi-user Nix installations,
+    builds should not be performed by the Nix account since that would
+    allow users to arbitrarily modify the Nix store and database by
+    supplying specially crafted builders; and they cannot be performed
+    by the calling user since that would allow him/her to influence
+    the build result.</para>
+
+    <para>Therefore, if this option is non-empty and specifies a valid
+    group, builds will be performed under the user accounts that are a
+    member of the group specified here (as listed in
+    <filename>/etc/group</filename>).  Those user accounts should not
+    be used for any other purpose!</para>
+
+    <para>Nix will never run two builds under the same user account at
+    the same time.  This is to prevent an obvious security hole: a
+    malicious user writing a Nix expression that modifies the build
+    result of a legitimate Nix expression being built by another user.
+    Therefore it is good to have as many Nix build user accounts as
+    you can spare.  (Remember: uids are cheap.)</para>
+
+    <para>The build users should have permission to create files in
+    the Nix store, but not delete them.  Therefore,
+    <filename>/nix/store</filename> should be owned by the Nix
+    account, its group should be the group specified here, and its
+    mode should be <literal>1775</literal>.</para>
+
+    <para>If the build users group is empty, builds will be performed
+    under the uid of the Nix process (that is, the uid of the caller
+    if <envar>NIX_REMOTE</envar> is empty, the uid under which the Nix
+    daemon runs if <envar>NIX_REMOTE</envar> is
+    <literal>daemon</literal>).  Obviously, this should not be used in
+    multi-user settings with untrusted users.</para>
+
+    </listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>build-use-chroot</literal></term>
+
+    <listitem><para>If set to <literal>true</literal>, builds will be
+    performed in a <emphasis>chroot environment</emphasis>, i.e., the
+    build will be isolated from the normal file system hierarchy and
+    will only see the Nix store, the temporary build directory, and
+    the directories configured with the <link linkend="conf-build-chroot-dirs"><literal>build-chroot-dirs</literal>
+    option</link> (such as <filename>/proc</filename> and
+    <filename>/dev</filename>).  This is useful to prevent undeclared
+    dependencies on files in directories such as
+    <filename>/usr/bin</filename>.</para>
+
+    <para>The use of a chroot requires that Nix is run as root (but
+    you can still use the <link linkend="conf-build-users-group">&#x201C;build users&#x201D; feature</link> to
+    perform builds under different users than root).  Currently,
+    chroot builds only work on Linux because Nix uses &#x201C;bind mounts&#x201D; to
+    make the Nix store and other directories available inside the
+    chroot.</para>
+
+    </listitem>
+
+  </varlistentry>
+
+  
+  <varlistentry><term><literal>build-use-substitutes</literal></term>
+
+    <listitem><para>If set to <literal>true</literal> (default), Nix
+    will use binary substitutes if available.  This option can be
+    disabled to force building from source.</para></listitem>
+
+  </varlistentry>
+
+    
+  <varlistentry><term><literal>build-fallback</literal></term>
+
+    <listitem><para>If set to <literal>true</literal>, Nix will fall
+    back to building from source if a binary substitute fails.  This
+    is equivalent to the <option>--fallback</option> flag.  The
+    default is <literal>false</literal>.</para></listitem>
+
+  </varlistentry>
+
+    
+  <varlistentry xml:id="conf-build-chroot-dirs"><term><literal>build-chroot-dirs</literal></term>
+
+    <listitem><para>When builds are performed in a chroot environment,
+    Nix will mount (using <command>mount --bind</command> on Linux)
+    some directories from the normal file system hierarchy inside the
+    chroot.  These are the Nix store, the temporary build directory
+    (usually
+    <filename>/tmp/nix-<replaceable>pid</replaceable>-<replaceable>number</replaceable></filename>)
+    and the directories listed here.  The default is <literal>dev
+    /proc</literal>.  Files in <filename>/dev</filename> (such as
+    <filename>/dev/null</filename>) are needed by many builds, and
+    some files in <filename>/proc</filename> may also be needed
+    occasionally.</para>
+
+    <para>The value used on NixOS is
+    
+<programlisting>
+build-use-chroot = /dev /proc /bin</programlisting>
+
+    to make the <filename>/bin/sh</filename> symlink available (which
+    is still needed by many builders).</para>
+
+    </listitem>
+
+  </varlistentry>
+
+  
+  <varlistentry><term><literal>build-cache-failures</literal></term>
+
+    <listitem><para>If set to <literal>true</literal>, Nix will
+    &#x201C;cache&#x201D; build failures, meaning that it will remember (in its
+    database) that a derivation previously failed.  If you then try to
+    build the derivation again, Nix will immediately fail rather than
+    perform the build again.  Failures in fixed-output derivations
+    (such as <function>fetchurl</function> calls) are never cached.
+    The &#x201C;failed&#x201D; status of a derivation can be cleared using
+    <command>nix-store --clear-failed-paths</command>.  By default,
+    failure caching is disabled.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>build-keep-log</literal></term>
+
+    <listitem><para>If set to <literal>true</literal> (the default),
+    Nix will write the build log of a derivation (i.e. the standard
+    output and error of its builder) to the directory
+    <filename>/nix/var/log/nix/drvs</filename>.  The build log can be
+    retrieved using the command <command>nix-store -l
+    <replaceable>path</replaceable></command>.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>build-compress-log</literal></term>
+
+    <listitem><para>If set to <literal>true</literal> (the default),
+    build logs written to <filename>/nix/var/log/nix/drvs</filename>
+    will be compressed on the fly using bzip2.  Otherwise, they will
+    not be compressed.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>use-binary-caches</literal></term>
+
+    <listitem><para>If set to <literal>true</literal> (the default),
+    Nix will check the binary caches specified by
+    <option>binary-caches</option> and related options to obtain
+    binary substitutes.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>binary-caches</literal></term>
+
+    <listitem><para>A list of URLs of binary caches, separated by
+    whitespace.  The default is empty.<!-- The default is
+    <literal>http://nixos.org/binary-cache</literal>. --></para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>binary-caches-files</literal></term>
+
+    <listitem><para>A list of names of files that will be read to
+    obtain additional binary cache URLs.  The default is
+    <literal>/nix/var/nix/profiles/per-user/root/channels/binary-caches/*</literal>,
+    which ensures that Nix will use the binary caches corresponding to
+    the channels installed by root.  Do not set this option to read
+    files created by untrusted users!</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>trusted-binary-caches</literal></term>
+
+    <listitem><para>A list of URLs of binary caches, separated by
+    whitespace.  These are not used by default, but can be enabled by
+    users of the Nix daemon by specifying <literal>--option
+    binary-caches <replaceable>urls</replaceable></literal> on the
+    command line.  Daemon users are only allowed to pass a subset of
+    the URLs listed in <literal>binary-caches</literal> and
+    <literal>trusted-binary-caches</literal>.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>binary-caches-parallel-connections</literal></term>
+
+    <listitem><para>The maximum number of parallel HTTP connections
+    used by the binary cache substituter to get NAR info files.  This
+    number should be high to minimise latency.  It defaults to
+    150.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>force-manifest</literal></term>
+
+    <listitem><para>If this option is set to <literal>false</literal>
+    (default) and a Nix channel provides both a manifest and a binary
+    cache, only the binary cache will be used.  If set to
+    <literal>true</literal>, the manifest will be fetched as well.
+    This is useful if you want to use binary patches (which are
+    currently not supported by binary caches).</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>system</literal></term>
+
+    <listitem><para>This option specifies the canonical Nix system
+    name of the current installation, such as
+    <literal>i686-linux</literal> or
+    <literal>powerpc-darwin</literal>.  Nix can only build derivations
+    whose <literal>system</literal> attribute equals the value
+    specified here.  In general, it never makes sense to modify this
+    value from its default, since you can use it to &#x2018;lie&#x2019; about the
+    platform you are building on (e.g., perform a Mac OS build on a
+    Linux machine; the result would obviously be wrong).  It only
+    makes sense if the Nix binaries can run on multiple platforms,
+    e.g., &#x2018;universal binaries&#x2019; that run on <literal>powerpc-darwin</literal> and
+    <literal>i686-darwin</literal>.</para>
+
+    <para>It defaults to the canonical Nix system name detected by
+    <filename>configure</filename> at build time.</para></listitem>
+
+  </varlistentry>
+
+
+  <varlistentry><term><literal>fsync-metadata</literal></term>
+
+    <listitem><para>If set to <literal>true</literal>, changes to the
+    Nix store metadata (in <filename>/nix/var/nix/db</filename>) are
+    synchronously flushed to disk.  This improves robustness in case
+    of system crashes, but reduces performance.  The default is
+    <literal>true</literal>.</para></listitem>
+
+  </varlistentry>
+
+  
+  <varlistentry><term><literal>auto-optimise-store</literal></term>
+
+    <listitem><para>If set to <literal>true</literal> (the default),
+    Nix automatically detects files in the store that have identical
+    contents, and replaces them with hard links to a single copy.
+    This saves disk space.  If set to <literal>false</literal>, you
+    can still run <command>nix-store --optimise</command> to get rid
+    of duplicate files.</para></listitem>
+
+  </varlistentry>
+
+
+</variablelist>
+
+</para>
+
+</refsection>
+
+</refentry>
+    </section>
+    
   </appendix>
 
   <appendix xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -11765,6 +12485,18 @@ exceeds the limit.)</para>
 </glossentry>
 
 
+<glossentry xml:id="gloss-nar"><glossterm>NAR</glossterm>
+
+  <glossdef><para>A <emphasis>N</emphasis>ix
+  <emphasis>AR</emphasis>chive.  This is a serialisation of a path in
+  the Nix store.  It can contain regular files, directories and
+  symbolic links.  NARs are generated and unpacked using
+  <command>nix-store --dump</command> and <command>nix-store
+  --restore</command>.</para></glossdef>
+
+</glossentry>
+
+
 
 </glosslist>
 
@@ -11773,7 +12505,250 @@ exceeds the limit.)</para>
 
   <appendix>
     <title>Nix Release Notes</title>
-    <section xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="ssec-relnotes-1.0"><title>Release 1.0 (May 11, 2012)</title>
+    <section xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="ssec-relnotes-1.2"><title>Release 1.2 (December 6, 2012)</title>
+
+<para>This release has the following improvements and changes:</para>
+
+<itemizedlist>
+
+  <listitem>
+    <para>Nix has a new binary substituter mechanism: the
+    <emphasis>binary cache</emphasis>.  A binary cache contains
+    pre-built binaries of Nix packages.  Whenever Nix wants to build a
+    missing Nix store path, it will check a set of binary caches to
+    see if any of them has a pre-built binary of that path.  The
+    configuration setting <option>binary-caches</option> contains a
+    list of URLs of binary caches.  For instance, doing
+<screen>
+$ nix-env -i thunderbird --option binary-caches http://nixos.org/binary-cache
+</screen>
+    will install Thunderbird and its dependencies, using the available
+    pre-built binaries in <uri>http://nixos.org/binary-cache</uri>.
+    The main advantage over the old &#x201C;manifest&#x201D;-based method of getting
+    pre-built binaries is that you don&#x2019;t have to worry about your
+    manifest being in sync with the Nix expressions you&#x2019;re installing
+    from; i.e., you don&#x2019;t need to run <command>nix-pull</command> to
+    update your manifest.  It&#x2019;s also more scalable because you don&#x2019;t
+    need to redownload a giant manifest file every time.
+    </para>
+
+    <para>A Nix channel can provide a binary cache URL that will be
+    used automatically if you subscribe to that channel.  If you use
+    the Nixpkgs or NixOS channels
+    (<uri>http://nixos.org/channels</uri>) you automatically get the
+    cache <uri>http://nixos.org/binary-cache</uri>.</para>
+
+    <para>Binary caches are created using <command>nix-push</command>.
+    For details on the operation and format of binary caches, see the
+    <command>nix-push</command> manpage.  More details are provided in
+    <link xlink:href="http://lists.science.uu.nl/pipermail/nix-dev/2012-September/009826.html">this
+    nix-dev posting</link>.</para>
+  </listitem>
+
+  <listitem>
+    <para>Multiple output support should now be usable.  A derivation
+    can declare that it wants to produce multiple store paths by
+    saying something like
+<programlisting>
+outputs = [ "lib" "headers" "doc" ];
+</programlisting>
+    This will cause Nix to pass the intended store path of each output
+    to the builder through the environment variables
+    <literal>lib</literal>, <literal>headers</literal> and
+    <literal>doc</literal>.  Other packages can refer to a specific
+    output by referring to
+    <literal><replaceable>pkg</replaceable>.<replaceable>output</replaceable></literal>,
+    e.g.
+<programlisting>
+buildInputs = [ pkg.lib pkg.headers ];
+</programlisting>
+    If you install a package with multiple outputs using
+    <command>nix-env</command>, each output path will be symlinked
+    into the user environment.</para>
+  </listitem>
+
+  <listitem>
+    <para>Dashes are now valid as part of identifiers and attribute
+    names.</para>
+  </listitem>
+
+  <listitem>
+    <para>The new operation <command>nix-store --repair-path</command>
+    allows corrupted or missing store paths to be repaired by
+    redownloading them.  <command>nix-store --verify --check-contents
+    --repair</command> will scan and repair all paths in the Nix
+    store.  Similarly, <command>nix-env</command>,
+    <command>nix-build</command>, <command>nix-instantiate</command>
+    and <command>nix-store --realise</command> have a
+    <option>--repair</option> flag to detect and fix bad paths by
+    rebuilding or redownloading them.</para>
+  </listitem>
+
+  <listitem>
+    <para>Nix no longer sets the immutable bit on files in the Nix
+    store.  Instead, the recommended way to guard the Nix store
+    against accidental modification on Linux is to make it a read-only
+    bind mount, like this:
+
+<screen>
+$ mount --bind /nix/store /nix/store
+$ mount -o remount,ro,bind /nix/store
+</screen>
+
+    Nix will automatically make <filename>/nix/store</filename>
+    writable as needed (using a private mount namespace) to allow
+    modifications.</para>
+  </listitem>
+
+  <listitem>
+    <para>Store optimisation (replacing identical files in the store
+    with hard links) can now be done automatically every time a path
+    is added to the store.  This is enabled by setting the
+    configuration option <literal>auto-optimise-store</literal> to
+    <literal>true</literal> (disabled by default).</para>
+  </listitem>
+
+  <listitem>
+    <para>Nix now supports <command>xz</command> compression for NARs
+    in addition to <command>bzip2</command>.  It compresses about 30%
+    better on typical archives and decompresses about twice as
+    fast.</para>
+  </listitem>
+
+  <listitem>
+    <para>Basic Nix expression evaluation profiling: setting the
+    environment variable <envar>NIX_COUNT_CALLS</envar> to
+    <literal>1</literal> will cause Nix to print how many times each
+    primop or function was executed.</para>
+  </listitem>
+
+  <listitem>
+    <para>New primops: <varname>concatLists</varname>,
+    <varname>elem</varname>, <varname>elemAt</varname> and
+    <varname>filter</varname>.</para>
+  </listitem>
+
+  <listitem>
+    <para>The command <command>nix-copy-closure</command> has a new
+    flag <option>--use-substitutes</option> (<option>-s</option>) to
+    download missing paths on the target machine using the substitute
+    mechanism.</para>
+  </listitem>
+
+  <listitem>
+    <para>The command <command>nix-worker</command> has been renamed
+    to <command>nix-daemon</command>.  Support for running the Nix
+    worker in &#x201C;slave&#x201D; mode has been removed.</para>
+  </listitem>
+
+  <listitem>
+    <para>The <option>--help</option> flag of every Nix command now
+    invokes <command>man</command>.</para>
+  </listitem>
+
+  <listitem>
+    <para>Chroot builds are now supported on systemd machines.</para>
+  </listitem>
+
+</itemizedlist>
+
+<para>This release has contributions from Eelco Dolstra, Florian
+Friesdorf, Mats Erik Andersson and Shea Levy.</para>
+
+</section><section xmlns="http://docbook.org/ns/docbook" xml:id="ssec-relnotes-1.1"><title>Release 1.1 (July 18, 2012)</title>
+
+<para>This release has the following improvements:</para>
+
+<itemizedlist>
+
+  <listitem>
+    <para>On Linux, when doing a chroot build, Nix now uses various
+    namespace features provided by the Linux kernel to improve
+    build isolation.  Namely:
+    <itemizedlist>
+      <listitem><para>The private network namespace ensures that
+      builders cannot talk to the outside world (or vice versa): each
+      build only sees a private loopback interface.  This also means
+      that two concurrent builds can listen on the same port (e.g. as
+      part of a test) without conflicting with each
+      other.</para></listitem>
+      <listitem><para>The PID namespace causes each build to start as
+      PID 1.  Processes outside of the chroot are not visible to those
+      on the inside.  On the other hand, processes inside the chroot
+      <emphasis>are</emphasis> visible from the outside (though with
+      different PIDs).</para></listitem>
+      <listitem><para>The IPC namespace prevents the builder from
+      communicating with outside processes using SysV IPC mechanisms
+      (shared memory, message queues, semaphores).  It also ensures
+      that all IPC objects are destroyed when the builder
+      exits.</para></listitem>
+      <listitem><para>The UTS namespace ensures that builders see a
+      hostname of <literal>localhost</literal> rather than the actual
+      hostname.</para></listitem>
+      <listitem><para>The private mount namespace was already used by
+      Nix to ensure that the bind-mounts used to set up the chroot are
+      cleaned up automatically.</para></listitem>
+    </itemizedlist>
+    </para>
+  </listitem>
+
+  <listitem>
+    <para>Build logs are now compressed using
+    <command>bzip2</command>.  The command <command>nix-store
+    -l</command> decompresses them on the fly.  This can be disabled
+    by setting the option <literal>build-compress-log</literal> to
+    <literal>false</literal>.</para>
+  </listitem>
+
+  <listitem>
+    <para>The creation of build logs in
+    <filename>/nix/var/log/nix/drvs</filename> can be disabled by
+    setting the new option <literal>build-keep-log</literal> to
+    <literal>false</literal>.  This is useful, for instance, for Hydra
+    build machines.</para>
+  </listitem>
+
+  <listitem>
+    <para>Nix now reserves some space in
+    <filename>/nix/var/nix/db/reserved</filename> to ensure that the
+    garbage collector can run successfully if the disk is full.  This
+    is necessary because SQLite transactions fail if the disk is
+    full.</para>
+  </listitem>
+
+  <listitem>
+    <para>Added a basic <function>fetchurl</function> function.  This
+    is not intended to replace the <function>fetchurl</function> in
+    Nixpkgs, but is useful for bootstrapping; e.g., it will allow us
+    to get rid of the bootstrap binaries in the Nixpkgs source tree
+    and download them instead.  You can use it by doing
+    <literal>import &lt;nix/fetchurl.nix&gt; { url =
+    <replaceable>url</replaceable>; sha256 =
+    "<replaceable>hash</replaceable>"; }</literal>. (Shea Levy)</para>
+  </listitem>
+
+  <listitem>
+    <para>Improved RPM spec file. (Michel Alexandre Salim)</para>
+  </listitem>
+
+  <listitem>
+    <para>Support for on-demand socket-based activation in the Nix
+    daemon with <command>systemd</command>.</para>
+  </listitem>
+
+  <listitem>
+    <para>Added a manpage for
+    <citerefentry><refentrytitle>nix.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>.</para>
+  </listitem>
+
+  <listitem>
+    <para>When using the Nix daemon, the <option>-s</option> flag in
+    <command>nix-env -qa</command> is now much faster.</para>
+  </listitem>
+    
+</itemizedlist>
+
+</section><section xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xml:id="ssec-relnotes-1.0"><title>Release 1.0 (May 11, 2012)</title>
 
 <para>There have been numerous improvements and bug fixes since the
 previous release.  Here are the most significant:</para>

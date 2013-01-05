@@ -1,5 +1,4 @@
-#ifndef __HASH_H
-#define __HASH_H
+#pragma once
 
 #include "types.hh"
 #include "serialise.hh"
@@ -55,6 +54,9 @@ unsigned int hashLength32(const Hash & hash);
 /* Convert a hash to a base-32 representation. */
 string printHash32(const Hash & hash);
 
+/* Print a hash in base-16 if it's MD5, or base-32 otherwise. */
+string printHash16or32(const Hash & hash);
+
 /* Parse a base-32 representation of a hash code. */
 Hash parseHash32(HashType ht, const string & s);
 
@@ -109,6 +111,3 @@ public:
 
 
 }
-
-
-#endif /* !__HASH_H */

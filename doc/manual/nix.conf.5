@@ -1,0 +1,340 @@
+'\" t
+.\"     Title: nix.conf
+.\"    Author: Eelco Dolstra
+.\" Generator: DocBook XSL-NS Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: May 2012
+.\"    Manual: Command Reference
+.\"    Source: Nix 1.2
+.\"  Language: English
+.\"
+.TH "NIX\&.CONF" "5" "May 2012" "Nix 1\&.2" "Command Reference"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+nix.conf \- Nix configuration file
+.SH "DESCRIPTION"
+.PP
+A number of persistent settings of Nix are stored in the file
+\fIsysconfdir\fR/nix/nix\&.conf\&. This file is a list of
+\fIname\fR = \fIvalue\fR
+pairs, one per line\&. Comments start with a
+#
+character\&. Here is an example configuration file:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+gc\-keep\-outputs = true       # Nice for developers
+gc\-keep\-derivations = true   # Idem
+env\-keep\-derivations = false
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+You can override settings using the
+\fB\-\-option\fR
+flag, e\&.g\&.
+\-\-option gc\-keep\-outputs false\&.
+.PP
+The following settings are currently available:
+.PP
+gc\-keep\-outputs
+.RS 4
+If
+true, the garbage collector will keep the outputs of non\-garbage derivations\&. If
+false
+(default), outputs will be deleted unless they are GC roots themselves (or reachable from other roots)\&.
+.sp
+In general, outputs must be registered as roots separately\&. However, even if the output of a derivation is registered as a root, the collector will still delete store paths that are used only at build time (e\&.g\&., the C compiler, or source tarballs downloaded from the network)\&. To prevent it from doing so, set this option to
+true\&.
+.RE
+.PP
+gc\-keep\-derivations
+.RS 4
+If
+true
+(default), the garbage collector will keep the derivations from which non\-garbage store paths were built\&. If
+false, they will be deleted unless explicitly registered as a root (or reachable from other roots)\&.
+.sp
+Keeping derivation around is useful for querying and traceability (e\&.g\&., it allows you to ask with what dependencies or options a store path was built), so by default this option is on\&. Turn it off to safe a bit of disk space (or a lot if
+gc\-keep\-outputs
+is also turned on)\&.
+.RE
+.PP
+env\-keep\-derivations
+.RS 4
+If
+false
+(default), derivations are not stored in Nix user environments\&. That is, the derivation any build\-time\-only dependencies may be garbage\-collected\&.
+.sp
+If
+true, when you add a Nix derivation to a user environment, the path of the derivation is stored in the user environment\&. Thus, the derivation will not be garbage\-collected until the user environment generation is deleted (\fBnix\-env \-\-delete\-generations\fR)\&. To prevent build\-time\-only dependencies from being collected, you should also turn on
+gc\-keep\-outputs\&.
+.sp
+The difference between this option and
+gc\-keep\-derivations
+is that this one is \(lqsticky\(rq: it applies to any user environment created while this option was enabled, while
+gc\-keep\-derivations
+only applies at the moment the garbage collector is run\&.
+.RE
+.PP
+build\-max\-jobs
+.RS 4
+This option defines the maximum number of jobs that Nix will try to build in parallel\&. The default is
+1\&. You should generally set it to the number of CPUs in your system (e\&.g\&.,
+2
+on a Athlon 64 X2)\&. It can be overriden using the
+\fB\-\-max\-jobs\fR
+(\fB\-j\fR) command line switch\&.
+.RE
+.PP
+build\-cores
+.RS 4
+Sets the value of the
+\fBNIX_BUILD_CORES\fR
+environment variable in the invocation of builders\&. Builders can use this variable at their discretion to control the maximum amount of parallelism\&. For instance, in Nixpkgs, if the derivation attribute
+\fIenableParallelBuilding\fR
+is set to
+true, the builder passes the
+\fB\-j\fR\fB\fIN\fR\fR
+flag to GNU Make\&. It can be overriden using the
+\fB\-\-cores\fR
+command line switch and defaults to
+1\&. The value
+0
+means that the builder should use all available CPU cores in the system\&.
+.RE
+.PP
+build\-max\-silent\-time
+.RS 4
+This option defines the maximum number of seconds that a builder can go without producing any data on standard output or standard error\&. This is useful (for instance in a automated build system) to catch builds that are stuck in an infinite loop, or to catch remote builds that are hanging due to network problems\&. It can be overriden using the
+\fB\-\-max\-silent\-time\fR
+command line switch\&.
+.sp
+The value
+0
+means that there is no timeout\&. This is also the default\&.
+.RE
+.PP
+build\-timeout
+.RS 4
+This option defines the maximum number of seconds that a builder can run\&. This is useful (for instance in a automated build system) to catch builds that are stuck in an infinite loop but keep writing to their standard output or standard error\&. It can be overriden using the
+\fB\-\-timeout\fR
+command line switch\&.
+.sp
+The value
+0
+means that there is no timeout\&. This is also the default\&.
+.RE
+.PP
+build\-users\-group
+.RS 4
+This options specifies the Unix group containing the Nix build user accounts\&. In multi\-user Nix installations, builds should not be performed by the Nix account since that would allow users to arbitrarily modify the Nix store and database by supplying specially crafted builders; and they cannot be performed by the calling user since that would allow him/her to influence the build result\&.
+.sp
+Therefore, if this option is non\-empty and specifies a valid group, builds will be performed under the user accounts that are a member of the group specified here (as listed in
+/etc/group)\&. Those user accounts should not be used for any other purpose!
+.sp
+Nix will never run two builds under the same user account at the same time\&. This is to prevent an obvious security hole: a malicious user writing a Nix expression that modifies the build result of a legitimate Nix expression being built by another user\&. Therefore it is good to have as many Nix build user accounts as you can spare\&. (Remember: uids are cheap\&.)
+.sp
+The build users should have permission to create files in the Nix store, but not delete them\&. Therefore,
+/nix/store
+should be owned by the Nix account, its group should be the group specified here, and its mode should be
+1775\&.
+.sp
+If the build users group is empty, builds will be performed under the uid of the Nix process (that is, the uid of the caller if
+\fBNIX_REMOTE\fR
+is empty, the uid under which the Nix daemon runs if
+\fBNIX_REMOTE\fR
+is
+daemon)\&. Obviously, this should not be used in multi\-user settings with untrusted users\&.
+.RE
+.PP
+build\-use\-chroot
+.RS 4
+If set to
+true, builds will be performed in a
+\fIchroot environment\fR, i\&.e\&., the build will be isolated from the normal file system hierarchy and will only see the Nix store, the temporary build directory, and the directories configured with the
+build\-chroot\-dirs option
+(such as
+/proc
+and
+/dev)\&. This is useful to prevent undeclared dependencies on files in directories such as
+/usr/bin\&.
+.sp
+The use of a chroot requires that Nix is run as root (but you can still use the
+\(lqbuild users\(rq feature
+to perform builds under different users than root)\&. Currently, chroot builds only work on Linux because Nix uses \(lqbind mounts\(rq to make the Nix store and other directories available inside the chroot\&.
+.RE
+.PP
+build\-use\-substitutes
+.RS 4
+If set to
+true
+(default), Nix will use binary substitutes if available\&. This option can be disabled to force building from source\&.
+.RE
+.PP
+build\-fallback
+.RS 4
+If set to
+true, Nix will fall back to building from source if a binary substitute fails\&. This is equivalent to the
+\fB\-\-fallback\fR
+flag\&. The default is
+false\&.
+.RE
+.PP
+build\-chroot\-dirs
+.RS 4
+When builds are performed in a chroot environment, Nix will mount (using
+\fBmount \-\-bind\fR
+on Linux) some directories from the normal file system hierarchy inside the chroot\&. These are the Nix store, the temporary build directory (usually
+/tmp/nix\-\fIpid\fR\-\fInumber\fR) and the directories listed here\&. The default is
+dev /proc\&. Files in
+/dev
+(such as
+/dev/null) are needed by many builds, and some files in
+/proc
+may also be needed occasionally\&.
+.sp
+The value used on NixOS is
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+build\-use\-chroot = /dev /proc /bin
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+to make the
+/bin/sh
+symlink available (which is still needed by many builders)\&.
+.RE
+.PP
+build\-cache\-failures
+.RS 4
+If set to
+true, Nix will \(lqcache\(rq build failures, meaning that it will remember (in its database) that a derivation previously failed\&. If you then try to build the derivation again, Nix will immediately fail rather than perform the build again\&. Failures in fixed\-output derivations (such as
+\fBfetchurl\fR
+calls) are never cached\&. The \(lqfailed\(rq status of a derivation can be cleared using
+\fBnix\-store \-\-clear\-failed\-paths\fR\&. By default, failure caching is disabled\&.
+.RE
+.PP
+build\-keep\-log
+.RS 4
+If set to
+true
+(the default), Nix will write the build log of a derivation (i\&.e\&. the standard output and error of its builder) to the directory
+/nix/var/log/nix/drvs\&. The build log can be retrieved using the command
+\fBnix\-store \-l \fR\fB\fIpath\fR\fR\&.
+.RE
+.PP
+build\-compress\-log
+.RS 4
+If set to
+true
+(the default), build logs written to
+/nix/var/log/nix/drvs
+will be compressed on the fly using bzip2\&. Otherwise, they will not be compressed\&.
+.RE
+.PP
+use\-binary\-caches
+.RS 4
+If set to
+true
+(the default), Nix will check the binary caches specified by
+\fBbinary\-caches\fR
+and related options to obtain binary substitutes\&.
+.RE
+.PP
+binary\-caches
+.RS 4
+A list of URLs of binary caches, separated by whitespace\&. The default is empty\&.
+.RE
+.PP
+binary\-caches\-files
+.RS 4
+A list of names of files that will be read to obtain additional binary cache URLs\&. The default is
+/nix/var/nix/profiles/per\-user/root/channels/binary\-caches/*, which ensures that Nix will use the binary caches corresponding to the channels installed by root\&. Do not set this option to read files created by untrusted users!
+.RE
+.PP
+trusted\-binary\-caches
+.RS 4
+A list of URLs of binary caches, separated by whitespace\&. These are not used by default, but can be enabled by users of the Nix daemon by specifying
+\-\-option binary\-caches \fIurls\fR
+on the command line\&. Daemon users are only allowed to pass a subset of the URLs listed in
+binary\-caches
+and
+trusted\-binary\-caches\&.
+.RE
+.PP
+binary\-caches\-parallel\-connections
+.RS 4
+The maximum number of parallel HTTP connections used by the binary cache substituter to get NAR info files\&. This number should be high to minimise latency\&. It defaults to 150\&.
+.RE
+.PP
+force\-manifest
+.RS 4
+If this option is set to
+false
+(default) and a Nix channel provides both a manifest and a binary cache, only the binary cache will be used\&. If set to
+true, the manifest will be fetched as well\&. This is useful if you want to use binary patches (which are currently not supported by binary caches)\&.
+.RE
+.PP
+system
+.RS 4
+This option specifies the canonical Nix system name of the current installation, such as
+i686\-linux
+or
+powerpc\-darwin\&. Nix can only build derivations whose
+system
+attribute equals the value specified here\&. In general, it never makes sense to modify this value from its default, since you can use it to \(oqlie\(cq about the platform you are building on (e\&.g\&., perform a Mac OS build on a Linux machine; the result would obviously be wrong)\&. It only makes sense if the Nix binaries can run on multiple platforms, e\&.g\&., \(oquniversal binaries\(cq that run on
+powerpc\-darwin
+and
+i686\-darwin\&.
+.sp
+It defaults to the canonical Nix system name detected by
+configure
+at build time\&.
+.RE
+.PP
+fsync\-metadata
+.RS 4
+If set to
+true, changes to the Nix store metadata (in
+/nix/var/nix/db) are synchronously flushed to disk\&. This improves robustness in case of system crashes, but reduces performance\&. The default is
+true\&.
+.RE
+.PP
+auto\-optimise\-store
+.RS 4
+If set to
+true
+(the default), Nix automatically detects files in the store that have identical contents, and replaces them with hard links to a single copy\&. This saves disk space\&. If set to
+false, you can still run
+\fBnix\-store \-\-optimise\fR
+to get rid of duplicate files\&.
+.RE
+.SH "AUTHOR"
+.PP
+\fBEelco Dolstra\fR
+.br
+LogicBlox
+.RS 4
+Author
+.RE
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2004-2012 Eelco Dolstra
+.br

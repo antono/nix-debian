@@ -1,5 +1,4 @@
-#ifndef __UTIL_H
-#define __UTIL_H
+#pragma once
 
 #include "types.hh"
 
@@ -17,6 +16,9 @@ namespace nix {
 
 #define foreach(it_type, it, collection)                                \
     for (it_type it = (collection).begin(); it != (collection).end(); ++it)
+
+#define foreach_reverse(it_type, it, collection)                                \
+    for (it_type it = (collection).rbegin(); it != (collection).rend(); ++it)
 
 
 /* Return an environment variable. */
@@ -61,7 +63,7 @@ Strings readDirectory(const Path & path);
 
 /* Read the contents of a file into a string. */
 string readFile(int fd);
-string readFile(const Path & path);
+string readFile(const Path & path, bool drain = false);
 
 /* Write a string to a file. */
 void writeFile(const Path & path, const string & s);
@@ -81,15 +83,14 @@ void computePathSize(const Path & path,
    returns the number of bytes and blocks freed. */
 void deletePath(const Path & path);
 
-void deletePath(const Path & path, unsigned long long & bytesFreed,
-    unsigned long long & blocksFreed);
+void deletePath(const Path & path, unsigned long long & bytesFreed);
 
 /* Make a path read-only recursively. */
 void makePathReadOnly(const Path & path);
 
 /* Create a temporary directory. */
 Path createTempDir(const Path & tmpRoot = "", const Path & prefix = "nix",
-    bool includePid = true, bool useGlobalCounter = true);
+    bool includePid = true, bool useGlobalCounter = true, mode_t mode = 0755);
 
 /* Create a directory and all its parents, if necessary.  Returns the
    list of created directories, in order of creation. */
@@ -147,7 +148,9 @@ void printMsg_(Verbosity level, const format & f);
 
 void warnOnce(bool & haveWarned, const format & f);
 
-extern void (*writeToStderr) (const unsigned char * buf, size_t count);
+void writeToStderr(const string & s);
+
+extern void (*_writeToStderr) (const unsigned char * buf, size_t count);
 
 
 /* Wrappers arount read()/write() that read/write exactly the
@@ -261,13 +264,12 @@ void closeMostFDs(const set<int> & exceptions);
 /* Set the close-on-exec flag for the given file descriptor. */
 void closeOnExec(int fd);
 
-/* Wrapper around _exit() on Unix and ExitProcess() on Windows.  (On
-   Cygwin, _exit() doesn't seem to do the right thing.) */
-void quickExit(int status);
-
 /* Common initialisation for setuid programs: clear the environment,
    sanitize file handles 0, 1 and 2. */
 void setuidCleanup();
+
+/* Call vfork() if available, otherwise fork(). */
+extern pid_t (*maybeVfork)();
 
 
 /* User interruption. */
@@ -285,12 +287,17 @@ MakeError(Interrupted, BaseError)
 
 
 /* String tokenizer. */
-Strings tokenizeString(const string & s, const string & separators = " \t\n\r");
+template<class C> C tokenizeString(const string & s, const string & separators = " \t\n\r");
 
 
 /* Concatenate the given strings with a separator between the
    elements. */
 string concatStringsSep(const string & sep, const Strings & ss);
+string concatStringsSep(const string & sep, const StringSet & ss);
+
+
+/* Remove trailing whitespace from a string. */
+string chomp(const string & s);
 
 
 /* Convert the exit status of a child as returned by wait() into an
@@ -327,12 +334,15 @@ string parseString(std::istream & str);
 bool endOfList(std::istream & str);
 
 
+/* Escape a string that contains octal-encoded escape codes such as
+   used in /etc/fstab and /proc/mounts (e.g. "foo\040bar" decodes to
+   "foo bar"). */
+string decodeOctalEscaped(const string & s);
+
+
 /* Exception handling in destructors: print an error message, then
    ignore the exception. */
 void ignoreException();
 
 
 }
-
-
-#endif /* !__UTIL_H */

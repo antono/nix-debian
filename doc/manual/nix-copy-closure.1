@@ -4,10 +4,10 @@
 .\" Generator: DocBook XSL-NS Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: May 2012
 .\"    Manual: Command Reference
-.\"    Source: Nix 1.0
+.\"    Source: Nix 1.2
 .\"  Language: English
 .\"
-.TH "NIX\-COPY\-CLOSURE" "1" "May 2012" "Nix 1\&.0" "Command Reference"
+.TH "NIX\-COPY\-CLOSURE" "1" "May 2012" "Nix 1\&.2" "Command Reference"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +22,7 @@
 nix-copy-closure \- copy a closure to or from a remote machine via SSH
 .SH "SYNOPSIS"
 .HP \w'\fBnix\-copy\-closure\fR\ 'u
-\fBnix\-copy\-closure\fR [\fB\-\-to\fR | \fB\-\-from\fR] [\fB\-\-sign\fR] [\fB\-\-gzip\fR] [\fB\-\-bzip2\fR] [\fB\-\-xz\fR] [\fB\-\-show\-progress\fR] [\fB\-\-include\-outputs\fR] \fIuser@\fR\fImachine\fR \fIpaths\fR
+\fBnix\-copy\-closure\fR [\fB\-\-to\fR | \fB\-\-from\fR] [\fB\-\-sign\fR] [\fB\-\-gzip\fR] [\fB\-\-bzip2\fR] [\fB\-\-xz\fR] [\fB\-\-show\-progress\fR] [\fB\-\-include\-outputs\fR] [\fB\-\-use\-substitutes\fR] [\fB\-s\fR] \fIuser@\fR\fImachine\fR \fIpaths\fR
 .SH "DESCRIPTION"
 .PP
 \fBnix\-copy\-closure\fR
@@ -96,6 +96,13 @@ utility to be in
 \fB\-\-include\-outputs\fR
 .RS 4
 Also copy the outputs of store derivations included in the closure\&.
+.RE
+.PP
+\fB\-\-use\-substitutes\fR / \fB\-s\fR
+.RS 4
+Attempt to download missing paths on the target machine using Nix\(cqs substitute mechanism\&. Any paths that cannot be substituted on the target are still copied normally from the source\&. This is useful, for instance, if the connection between the source and target machine is slow, but the connection between the target machine and
+nixos\&.org
+(the default binary cache server) is fast\&.
 .RE
 .SS "Environment variables"
 .PP

@@ -1,4 +1,131 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Nix Release Notes</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook XSL-NS Stylesheets V1.75.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article" title="Nix Release Notes"><div class="titlepage"><div><div><h2 class="title"><a name="sec-relnotes"></a>Nix Release Notes</h2></div></div><hr></div><div class="section" title="Release 1.0 (May 11, 2012)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="ssec-relnotes-1.0"></a>Release 1.0 (May 11, 2012)</h2></div></div></div><p>There have been numerous improvements and bug fixes since the
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Nix Release Notes</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook XSL-NS Stylesheets V1.75.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article" title="Nix Release Notes"><div class="titlepage"><div><div><h2 class="title"><a name="sec-relnotes"></a>Nix Release Notes</h2></div></div><hr></div><div class="section" title="Release 1.2 (December 6, 2012)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="ssec-relnotes-1.2"></a>Release 1.2 (December 6, 2012)</h2></div></div></div><p>This release has the following improvements and changes:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Nix has a new binary substituter mechanism: the
+    <span class="emphasis"><em>binary cache</em></span>.  A binary cache contains
+    pre-built binaries of Nix packages.  Whenever Nix wants to build a
+    missing Nix store path, it will check a set of binary caches to
+    see if any of them has a pre-built binary of that path.  The
+    configuration setting <code class="option">binary-caches</code> contains a
+    list of URLs of binary caches.  For instance, doing
+</p><pre class="screen">
+$ nix-env -i thunderbird --option binary-caches http://nixos.org/binary-cache
+</pre><p>
+    will install Thunderbird and its dependencies, using the available
+    pre-built binaries in <code class="uri">http://nixos.org/binary-cache</code>.
+    The main advantage over the old &#8220;manifest&#8221;-based method of getting
+    pre-built binaries is that you don&#8217;t have to worry about your
+    manifest being in sync with the Nix expressions you&#8217;re installing
+    from; i.e., you don&#8217;t need to run <span class="command"><strong>nix-pull</strong></span> to
+    update your manifest.  It&#8217;s also more scalable because you don&#8217;t
+    need to redownload a giant manifest file every time.
+    </p><p>A Nix channel can provide a binary cache URL that will be
+    used automatically if you subscribe to that channel.  If you use
+    the Nixpkgs or NixOS channels
+    (<code class="uri">http://nixos.org/channels</code>) you automatically get the
+    cache <code class="uri">http://nixos.org/binary-cache</code>.</p><p>Binary caches are created using <span class="command"><strong>nix-push</strong></span>.
+    For details on the operation and format of binary caches, see the
+    <span class="command"><strong>nix-push</strong></span> manpage.  More details are provided in
+    <a class="link" href="http://lists.science.uu.nl/pipermail/nix-dev/2012-September/009826.html" target="_top">this
+    nix-dev posting</a>.</p></li><li class="listitem"><p>Multiple output support should now be usable.  A derivation
+    can declare that it wants to produce multiple store paths by
+    saying something like
+</p><pre class="programlisting">
+outputs = [ "lib" "headers" "doc" ];
+</pre><p>
+    This will cause Nix to pass the intended store path of each output
+    to the builder through the environment variables
+    <code class="literal">lib</code>, <code class="literal">headers</code> and
+    <code class="literal">doc</code>.  Other packages can refer to a specific
+    output by referring to
+    <code class="literal"><em class="replaceable"><code>pkg</code></em>.<em class="replaceable"><code>output</code></em></code>,
+    e.g.
+</p><pre class="programlisting">
+buildInputs = [ pkg.lib pkg.headers ];
+</pre><p>
+    If you install a package with multiple outputs using
+    <span class="command"><strong>nix-env</strong></span>, each output path will be symlinked
+    into the user environment.</p></li><li class="listitem"><p>Dashes are now valid as part of identifiers and attribute
+    names.</p></li><li class="listitem"><p>The new operation <span class="command"><strong>nix-store --repair-path</strong></span>
+    allows corrupted or missing store paths to be repaired by
+    redownloading them.  <span class="command"><strong>nix-store --verify --check-contents
+    --repair</strong></span> will scan and repair all paths in the Nix
+    store.  Similarly, <span class="command"><strong>nix-env</strong></span>,
+    <span class="command"><strong>nix-build</strong></span>, <span class="command"><strong>nix-instantiate</strong></span>
+    and <span class="command"><strong>nix-store --realise</strong></span> have a
+    <code class="option">--repair</code> flag to detect and fix bad paths by
+    rebuilding or redownloading them.</p></li><li class="listitem"><p>Nix no longer sets the immutable bit on files in the Nix
+    store.  Instead, the recommended way to guard the Nix store
+    against accidental modification on Linux is to make it a read-only
+    bind mount, like this:
+
+</p><pre class="screen">
+$ mount --bind /nix/store /nix/store
+$ mount -o remount,ro,bind /nix/store
+</pre><p>
+
+    Nix will automatically make <code class="filename">/nix/store</code>
+    writable as needed (using a private mount namespace) to allow
+    modifications.</p></li><li class="listitem"><p>Store optimisation (replacing identical files in the store
+    with hard links) can now be done automatically every time a path
+    is added to the store.  This is enabled by setting the
+    configuration option <code class="literal">auto-optimise-store</code> to
+    <code class="literal">true</code> (disabled by default).</p></li><li class="listitem"><p>Nix now supports <span class="command"><strong>xz</strong></span> compression for NARs
+    in addition to <span class="command"><strong>bzip2</strong></span>.  It compresses about 30%
+    better on typical archives and decompresses about twice as
+    fast.</p></li><li class="listitem"><p>Basic Nix expression evaluation profiling: setting the
+    environment variable <code class="envar">NIX_COUNT_CALLS</code> to
+    <code class="literal">1</code> will cause Nix to print how many times each
+    primop or function was executed.</p></li><li class="listitem"><p>New primops: <code class="varname">concatLists</code>,
+    <code class="varname">elem</code>, <code class="varname">elemAt</code> and
+    <code class="varname">filter</code>.</p></li><li class="listitem"><p>The command <span class="command"><strong>nix-copy-closure</strong></span> has a new
+    flag <code class="option">--use-substitutes</code> (<code class="option">-s</code>) to
+    download missing paths on the target machine using the substitute
+    mechanism.</p></li><li class="listitem"><p>The command <span class="command"><strong>nix-worker</strong></span> has been renamed
+    to <span class="command"><strong>nix-daemon</strong></span>.  Support for running the Nix
+    worker in &#8220;slave&#8221; mode has been removed.</p></li><li class="listitem"><p>The <code class="option">--help</code> flag of every Nix command now
+    invokes <span class="command"><strong>man</strong></span>.</p></li><li class="listitem"><p>Chroot builds are now supported on systemd machines.</p></li></ul></div><p>This release has contributions from Eelco Dolstra, Florian
+Friesdorf, Mats Erik Andersson and Shea Levy.</p></div><div class="section" title="Release 1.1 (July 18, 2012)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="ssec-relnotes-1.1"></a>Release 1.1 (July 18, 2012)</h2></div></div></div><p>This release has the following improvements:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>On Linux, when doing a chroot build, Nix now uses various
+    namespace features provided by the Linux kernel to improve
+    build isolation.  Namely:
+    </p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p>The private network namespace ensures that
+      builders cannot talk to the outside world (or vice versa): each
+      build only sees a private loopback interface.  This also means
+      that two concurrent builds can listen on the same port (e.g. as
+      part of a test) without conflicting with each
+      other.</p></li><li class="listitem"><p>The PID namespace causes each build to start as
+      PID 1.  Processes outside of the chroot are not visible to those
+      on the inside.  On the other hand, processes inside the chroot
+      <span class="emphasis"><em>are</em></span> visible from the outside (though with
+      different PIDs).</p></li><li class="listitem"><p>The IPC namespace prevents the builder from
+      communicating with outside processes using SysV IPC mechanisms
+      (shared memory, message queues, semaphores).  It also ensures
+      that all IPC objects are destroyed when the builder
+      exits.</p></li><li class="listitem"><p>The UTS namespace ensures that builders see a
+      hostname of <code class="literal">localhost</code> rather than the actual
+      hostname.</p></li><li class="listitem"><p>The private mount namespace was already used by
+      Nix to ensure that the bind-mounts used to set up the chroot are
+      cleaned up automatically.</p></li></ul></div><p>
+    </p></li><li class="listitem"><p>Build logs are now compressed using
+    <span class="command"><strong>bzip2</strong></span>.  The command <span class="command"><strong>nix-store
+    -l</strong></span> decompresses them on the fly.  This can be disabled
+    by setting the option <code class="literal">build-compress-log</code> to
+    <code class="literal">false</code>.</p></li><li class="listitem"><p>The creation of build logs in
+    <code class="filename">/nix/var/log/nix/drvs</code> can be disabled by
+    setting the new option <code class="literal">build-keep-log</code> to
+    <code class="literal">false</code>.  This is useful, for instance, for Hydra
+    build machines.</p></li><li class="listitem"><p>Nix now reserves some space in
+    <code class="filename">/nix/var/nix/db/reserved</code> to ensure that the
+    garbage collector can run successfully if the disk is full.  This
+    is necessary because SQLite transactions fail if the disk is
+    full.</p></li><li class="listitem"><p>Added a basic <code class="function">fetchurl</code> function.  This
+    is not intended to replace the <code class="function">fetchurl</code> in
+    Nixpkgs, but is useful for bootstrapping; e.g., it will allow us
+    to get rid of the bootstrap binaries in the Nixpkgs source tree
+    and download them instead.  You can use it by doing
+    <code class="literal">import &lt;nix/fetchurl.nix&gt; { url =
+    <em class="replaceable"><code>url</code></em>; sha256 =
+    "<em class="replaceable"><code>hash</code></em>"; }</code>. (Shea Levy)</p></li><li class="listitem"><p>Improved RPM spec file. (Michel Alexandre Salim)</p></li><li class="listitem"><p>Support for on-demand socket-based activation in the Nix
+    daemon with <span class="command"><strong>systemd</strong></span>.</p></li><li class="listitem"><p>Added a manpage for
+    <span class="citerefentry"><span class="refentrytitle">nix.conf</span>(5)</span>.</p></li><li class="listitem"><p>When using the Nix daemon, the <code class="option">-s</code> flag in
+    <span class="command"><strong>nix-env -qa</strong></span> is now much faster.</p></li></ul></div></div><div class="section" title="Release 1.0 (May 11, 2012)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="ssec-relnotes-1.0"></a>Release 1.0 (May 11, 2012)</h2></div></div></div><p>There have been numerous improvements and bug fixes since the
 previous release.  Here are the most significant:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Nix can now optionally use the Boehm garbage collector.
     This significantly reduces the Nix evaluator&#8217;s memory footprint,
     especially when evaluating large NixOS system configurations.  It
@@ -398,9 +525,9 @@ on Nix.  Here is an (incomplete) list:</p><div class="itemizedlist"><ul class="i
   <code class="function">builtins.substring</code>,
   <code class="function">throw</code>,
   <code class="function">builtins.trace</code>,
-  <code class="function">builtins.readFile</code>.</p></li></ul></div></div><div class="section" title="Release 0.10.1 (October 11, 2006)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id377209"></a>Release 0.10.1 (October 11, 2006)</h2></div></div></div><p>This release fixes two somewhat obscure bugs that occur when
+  <code class="function">builtins.readFile</code>.</p></li></ul></div></div><div class="section" title="Release 0.10.1 (October 11, 2006)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp314368"></a>Release 0.10.1 (October 11, 2006)</h2></div></div></div><p>This release fixes two somewhat obscure bugs that occur when
 evaluating Nix expressions that are stored inside the Nix store
-(<code class="literal">NIX-67</code>).  These do not affect most users.</p></div><div class="section" title="Release 0.10 (October 6, 2006)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id377225"></a>Release 0.10 (October 6, 2006)</h2></div></div></div><div class="note" title="Note"><h3 class="title">Note</h3><p>This version of Nix uses Berkeley DB 4.4 instead of 4.3.
+(<code class="literal">NIX-67</code>).  These do not affect most users.</p></div><div class="section" title="Release 0.10 (October 6, 2006)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp316320"></a>Release 0.10 (October 6, 2006)</h2></div></div></div><div class="note" title="Note"><h3 class="title">Note</h3><p>This version of Nix uses Berkeley DB 4.4 instead of 4.3.
 The database is upgraded automatically, but you should be careful not
 to use old versions of Nix that still use Berkeley DB 4.3.  In
 particular, if you use a Nix installed through Nix, you should run
@@ -580,7 +707,7 @@ irreversible.</p></div><div class="itemizedlist"><ul class="itemizedlist" type="
   </p></li><li class="listitem"><p>Nix source distributions are a lot smaller now since
   we no longer include a full copy of the Berkeley DB source
   distribution (but only the bits we need).</p></li><li class="listitem"><p>Header files are now installed so that external
-  programs can use the Nix libraries.</p></li></ul></div></div><div class="section" title="Release 0.9.2 (September 21, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id377844"></a>Release 0.9.2 (September 21, 2005)</h2></div></div></div><p>This bug fix release fixes two problems on Mac OS X:
+  programs can use the Nix libraries.</p></li></ul></div></div><div class="section" title="Release 0.9.2 (September 21, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp390352"></a>Release 0.9.2 (September 21, 2005)</h2></div></div></div><p>This bug fix release fixes two problems on Mac OS X:
 
 </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>If Nix was linked against statically linked versions
   of the ATerm or Berkeley DB library, there would be dynamic link
@@ -591,9 +718,9 @@ irreversible.</p></div><div class="itemizedlist"><ul class="itemizedlist" type="
   file descriptor at /nix/bin/nix-pull line 77</code> (issue
   <code class="literal">NIX-14</code>).</p></li></ul></div><p>
 
-</p></div><div class="section" title="Release 0.9.1 (September 20, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id377886"></a>Release 0.9.1 (September 20, 2005)</h2></div></div></div><p>This bug fix release addresses a problem with the ATerm library
+</p></div><div class="section" title="Release 0.9.1 (September 20, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp395392"></a>Release 0.9.1 (September 20, 2005)</h2></div></div></div><p>This bug fix release addresses a problem with the ATerm library
 when the <code class="option">--with-aterm</code> flag in
-<span class="command"><strong>configure</strong></span> was <span class="emphasis"><em>not</em></span> used.</p></div><div class="section" title="Release 0.9 (September 16, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id377910"></a>Release 0.9 (September 16, 2005)</h2></div></div></div><p>NOTE: this version of Nix uses Berkeley DB 4.3 instead of 4.2.
+<span class="command"><strong>configure</strong></span> was <span class="emphasis"><em>not</em></span> used.</p></div><div class="section" title="Release 0.9 (September 16, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp398240"></a>Release 0.9 (September 16, 2005)</h2></div></div></div><p>NOTE: this version of Nix uses Berkeley DB 4.3 instead of 4.2.
 The database is upgraded automatically, but you should be careful not
 to use old versions of Nix that still use Berkeley DB 4.2.  In
 particular, if you use a Nix installed through Nix, you should run
@@ -651,9 +778,9 @@ svnService = derivation {
   low-level build management using Nix (i.e., using Nix as a Make
   replacement).  See the commit messages for <code class="literal">r3578</code>
   and <code class="literal">r3580</code>.</p></li><li class="listitem"><p>Various bug fixes and performance
-  improvements.</p></li></ul></div></div><div class="section" title="Release 0.8.1 (April 13, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id378062"></a>Release 0.8.1 (April 13, 2005)</h2></div></div></div><p>This is a bug fix release.</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Patch downloading was broken.</p></li><li class="listitem"><p>The garbage collector would not delete paths that
+  improvements.</p></li></ul></div></div><div class="section" title="Release 0.8.1 (April 13, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp416480"></a>Release 0.8.1 (April 13, 2005)</h2></div></div></div><p>This is a bug fix release.</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Patch downloading was broken.</p></li><li class="listitem"><p>The garbage collector would not delete paths that
   had references from invalid (but substitutable)
-  paths.</p></li></ul></div></div><div class="section" title="Release 0.8 (April 11, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id378087"></a>Release 0.8 (April 11, 2005)</h2></div></div></div><p>NOTE: the hashing scheme in Nix 0.8 changed (as detailed below).
+  paths.</p></li></ul></div></div><div class="section" title="Release 0.8 (April 11, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp419552"></a>Release 0.8 (April 11, 2005)</h2></div></div></div><p>NOTE: the hashing scheme in Nix 0.8 changed (as detailed below).
 As a result, <span class="command"><strong>nix-pull</strong></span> manifests and channels built
 for Nix 0.7 and below will now work anymore.  However, the Nix
 expression language has not changed, so you can still build from
@@ -815,7 +942,7 @@ $ nix-env -f .../i686-linux.nix -i -E 'x: x.firefoxWrapper'</pre><p>
   <code class="varname">sha1</code> or <code class="varname">sha256</code> instead of
   <code class="varname">md5</code>.</p></li><li class="listitem"><p>Manual updates.</p></li></ul></div><p>
 
-</p></div><div class="section" title="Release 0.7 (January 12, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id378467"></a>Release 0.7 (January 12, 2005)</h2></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Binary patching.  When upgrading components using
+</p></div><div class="section" title="Release 0.7 (January 12, 2005)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp465136"></a>Release 0.7 (January 12, 2005)</h2></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Binary patching.  When upgrading components using
   pre-built binaries (through nix-pull / nix-channel), Nix can
   automatically download and apply binary patches to already installed
   components instead of full downloads.  Patching is &#8220;smart&#8221;: if there
@@ -829,7 +956,7 @@ $ nix-env -f .../i686-linux.nix -i -E 'x: x.firefoxWrapper'</pre><p>
   executable by all; setuid/setgid bits are dropped), and the group is
   set to the default.  This ensures that the result of a build and an
   installation through a substitute is the same; and that timestamp
-  dependencies are revealed.</p></li></ul></div></div><div class="section" title="Release 0.6 (November 14, 2004)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id378514"></a>Release 0.6 (November 14, 2004)</h2></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Rewrite of the normalisation engine.
+  dependencies are revealed.</p></li></ul></div></div><div class="section" title="Release 0.6 (November 14, 2004)"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp470720"></a>Release 0.6 (November 14, 2004)</h2></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Rewrite of the normalisation engine.
 
     </p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p>Multiple builds can now be performed in parallel
       (option <code class="option">-j</code>).</p></li><li class="listitem"><p>Distributed builds.  Nix can now call a shell
@@ -873,4 +1000,4 @@ $ nix-env -f .../i686-linux.nix -i -E 'x: x.firefoxWrapper'</pre><p>
     </p></li><li class="listitem"><p>Expression evaluation is much
   faster.</p></li><li class="listitem"><p>An Emacs mode for editing Nix expressions (with
   syntax highlighting and indentation) has been
-  added.</p></li><li class="listitem"><p>Many bug fixes.</p></li></ul></div></div><div class="section" title="Release 0.5 and earlier"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id378712"></a>Release 0.5 and earlier</h2></div></div></div><p>Please refer to the Subversion commit log messages.</p></div></div></body></html>
+  added.</p></li><li class="listitem"><p>Many bug fixes.</p></li></ul></div></div><div class="section" title="Release 0.5 and earlier"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp494624"></a>Release 0.5 and earlier</h2></div></div></div><p>Please refer to the Subversion commit log messages.</p></div></div></body></html>
